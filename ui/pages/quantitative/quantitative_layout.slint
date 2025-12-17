@@ -579,6 +579,8 @@ export component QuantitativeLayout inherits Rectangle {
     in property <[RsiData]> rsi_list;
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
+    in property <float> rsi_overbought_pct: 0.0;
+    in property <float> rsi_oversold_pct: 0.0; 
 
     in property <[CryptoData]> crypto_list; 
     in property <DominanceChartData> dominance_data; 
@@ -667,6 +669,8 @@ export component QuantitativeLayout inherits Rectangle {
                     rsi_list: root.rsi_list;
                     coin_list: root.coin_list;
                     ma_list: root.ma_list;
+                    rsi_overbought_pct: root.rsi_overbought_pct;
+                    rsi_oversold_pct: root.rsi_oversold_pct;
                     sort_rsi14 => {root.sort_rsi14();}
                 }
             }

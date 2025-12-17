@@ -42,7 +42,7 @@ export struct CryptoData {
     change_percentage: string,
     change_value: string,
     is_positive: bool,
-    chart_data: string,
+    chart_data: image, // Changed from string to image
 }
 
 // Updated Struct to hold the generated image AND values/positions
@@ -117,29 +117,30 @@ export component TickerTile inherits Rectangle {
     in property <string> high-price: "H 0.00"; 
     in property <string> low-price: "L 0.00"; 
     in property <bool> is-positive: true; 
-    // Input for chart SVG path 
-    in property <string> chart-data: ""; 
+    // Input for chart Image
+    in property <image> chart-data; 
     in property <brush> custom-bg: is-positive ? Palette.zone-oversold : Palette.zone-overbought; 
     horizontal-stretch: 1; 
     background: root.custom-bg; 
     border-radius: 6px; 
     height: 90px; 
+    
     // --- CHART AREA (Layer 1: Background) --- 
-    // Moved out of VerticalLayout to occupy the full tile size 
     Rectangle { 
         width: 100%; 
         height: 100%; 
         background: transparent;
-        horizontal-stretch: 1;
-        Path { 
+        clip: true;
+        
+        // Replaced Path with Image
+        Image { 
             width: 100%; 
             height: 100%; 
-            stroke: root.is-positive ? Palette.accent-green : Palette.accent-red; 
-            stroke-width: 1.5px; 
-            // Direct command binding 
-            commands: root.chart-data; 
+            source: root.chart-data;
+            image-fit: fill;
         } 
     } 
+    
     // --- CONTENT AREA (Layer 2: Foreground) --- 
     VerticalLayout { 
         padding: 8px; 

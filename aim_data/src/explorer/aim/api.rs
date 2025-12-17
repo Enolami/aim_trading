@@ -158,8 +158,8 @@ pub async fn fetch_icb_index_data_filtered() -> Result<Vec<IcbIndex>, reqwest::E
     Ok(filtered)
 }
 
-pub async fn fetch_crypto_data() -> Result<Vec<CryptoData>, reqwest::Error> {
-    let endpoint = "forex-chart?symbol=^EURBND&period=7d&interval=1d";
+pub async fn fetch_crypto_data(symbol: &str) -> Result<Vec<CryptoData>, reqwest::Error> {
+    let endpoint = format!("crypto-chart?symbol={}USDT&period=1y&interval=1d", symbol);
     fetch_api_data(&endpoint).await
 }
 

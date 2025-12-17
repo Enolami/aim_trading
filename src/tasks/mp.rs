@@ -77,6 +77,28 @@ pub async fn spawn_rsi_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskH
 
             // --- DATA PROCESSING ---
 
+            // 0. Calculate Statistics (Overbought/Oversold Percentages)
+            let total_count = final_data.len() as f32;
+            let mut overbought_count = 0.0;
+            let mut oversold_count = 0.0;
+
+            for d in &final_data {
+                if let Some(val) = d.value {
+                    if val > 70.0 {
+                        overbought_count += 1.0;
+                    } else if val < 30.0 {
+                        oversold_count += 1.0;
+                    }
+                }
+            }
+
+            // Avoid division by zero
+            let (overbought_pct, oversold_pct) = if total_count > 0.0 {
+                ((overbought_count / total_count) * 100.0, (oversold_count / total_count) * 100.0)
+            } else {
+                (0.0, 0.0)
+            };
+
             // 1. RSI List Data (Left Table)
             let rsi_list_data: Vec<SlintRsiData> = final_data.iter().map(|d| {
                     SlintRsiData {
@@ -163,6 +185,8 @@ pub async fn spawn_rsi_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskH
                 ui.set_coin_list(ModelRc::new(VecModel::from(coin_list_data)));
                 ui.set_ma_list(ModelRc::new(VecModel::from(ma_list_data)));
                 //ui.set_ma_table_list(ModelRc::new(VecModel::from(ma_table_list_data))); // Update MA Table
+                ui.set_rsi_overbought_pct(overbought_pct);
+                ui.set_rsi_oversold_pct(oversold_pct);
             });
 
             // Refresh rate

@@ -74,7 +74,7 @@ export component MySlider inherits Rectangle {
         x: (root.width - handle.width) * (root.value - root.minimum)/(root.maximum - root.minimum);
     }
 
-    touch := TouchArea {
+    /* touch := TouchArea {
         width: 100%;
         height: 200%;
         y: (parent.height - self.height) / 2;
@@ -92,14 +92,15 @@ export component MySlider inherits Rectangle {
             }
         }
     }
+    */
 }
 
 export component SliderCard inherits Rectangle {
     in-out property <string> title: "Quá Mua và Quá Bán";
     in-out property <string> left-text: "Quá Mua";
     in-out property <string> right-text: "Quá Bán";
-    in-out property <float> left-value: 2.1;
-    in-out property <float> right-value: 0.12;
+    in-out property <float> left-value: 0.0;
+    in-out property <float> right-value: 0.0;
 
     horizontal-stretch: 1;
     min-width: 20px; 
@@ -160,7 +161,7 @@ export component SliderCard inherits Rectangle {
         }
 
         MySlider {
-            value: 75;
+            value: 50 + (root.right-value - root.left-value); // Heuristic visualization
             minimum: 0;
             maximum: 100;
         }
@@ -227,7 +228,7 @@ component TableRow {
     }
 }
 
-export component CryptoDot inherits Rectangle {
+component CryptoDot inherits Rectangle {
     in property <float> rsi;
     in property <string> symbol;
     
@@ -289,25 +290,25 @@ export component RsiHeatmapChart inherits Rectangle {
                     Rectangle { background: Palette.zone-strong;
                     vertical-stretch: 25; }
                     Rectangle { background: Palette.zone-neutral;
-                    vertical-stretch: 25; }
+                    vertical-stretch: 20; }
                     Rectangle { background: Palette.zone-oversold;
-                    vertical-stretch: 25; }
+                    vertical-stretch: 30; }
                 }
 
-                Rectangle { height: 1px; 
+                Rectangle { height: 1px;
                 background: #ffffff10; y: parent.height * 0.25; }
                 Rectangle { height: 1px;
                 background: #ffffff10; y: parent.height * 0.50; }
                 Rectangle { height: 1px;
-                background: #ffffff10; y: parent.height * 0.75; }
+                background: #ffffff10; y: parent.height * 0.70; }
 
-                Rectangle { width: 2px;
+                Rectangle { width: 1px;
                 background: #ffffff05; x: parent.width * 0.15; }
-                Rectangle { width: 2px;
+                Rectangle { width: 1px;
                 background: #ffffff05; x: parent.width * 0.35; }
-                Rectangle { width: 2px;
+                Rectangle { width: 1px;
                 background: #ffffff05; x: parent.width * 0.60; }
-                Rectangle { width: 2px;
+                Rectangle { width: 1px;
                 background: #ffffff05; x: parent.width * 0.85; }
 
                 for coin in root.coins : CryptoDot {
@@ -410,25 +411,12 @@ component MaHeatmapChart inherits Rectangle {
                 vertical-stretch: 1;
                 background: @linear-gradient(180deg, #252525 0%, #151515 100%);
 
-                // UPDATE: Color zones to match reference (Red Top, Green Bottom)
-                // Top Zone (Red) - Deviation > 1.5
                 Rectangle {
-                    y: 0; // Top
-                    height: parent.height * 0.25; 
-                    background: Palette.accent-red.with-alpha(0.1);
+                    y: parent.height * 0.6;
+                    height: parent.height * 0.2;
+                    background: Palette.accent-green.with-alpha(0.05);
                     border-width: 1px;
-                    border-color: Palette.accent-red.with-alpha(0.2);
-                }
-
-                // Middle Zone (Implicit Grey/Dark from background)
-
-                // Bottom Zone (Green) - Deviation < 0.5
-                Rectangle {
-                    y: parent.height * 0.75;
-                    height: parent.height * 0.25;
-                    background: Palette.accent-green.with-alpha(0.1);
-                    border-width: 1px;
-                    border-color: Palette.accent-green.with-alpha(0.2);
+                    border-color: Palette.accent-green.with-alpha(0.1);
                 }
 
                 Rectangle { height: 1px;
@@ -530,6 +518,14 @@ export component MP inherits Rectangle {
     // NEW: Property for MA50 Table list
     in property <[RsiData]> ma_table_list;
 
+    // NEW: Properties for Slider Percentages
+    in property <float> rsi_overbought_pct: 0.0;
+    in property <float> rsi_oversold_pct: 0.0;
+    
+    // ADDED: Properties for MA Slider Percentages
+    in property <float> ma_above_pct: 0.0;
+    in property <float> ma_below_pct: 0.0;
+
     callback sort_rsi14();
     
     preferred-width: 1200px;
@@ -598,8 +594,14 @@ export component MP inherits Rectangle {
 
                                 HorizontalLayout {
                                     spacing: 10px;
-                                    SliderCard {} 
-                                    // SliderCard {}
+                                    // Top Left Slider: Binds to properties
+                                    SliderCard {
+                                        title: "Quá Mua và Quá Bán";
+                                        left-text: "Quá Bán"; // Green/Left
+                                        right-text: "Quá Mua"; // Red/Right
+                                        left-value: root.rsi_oversold_pct;
+                                        right-value: root.rsi_overbought_pct;
+                                    } 
                                 }
 
                              
@@ -646,8 +648,9 @@ export component MP inherits Rectangle {
                                         title: "Giá CP so với MA20";
                                         left-text: "Trên MA";
                                         right-text: "Dưới MA";
-                                        left-value: 85.1;
-                                        right-value: 14.9;
+                                        // UPDATED: Bind to dynamic properties
+                                        left-value: root.ma_above_pct;
+                                        right-value: root.ma_below_pct;
                                     }
                                 }
 
@@ -657,9 +660,9 @@ export component MP inherits Rectangle {
                                 
                                 ListView {
                                     // CHANGED: Bind to ma_table_list property
-                                    for item in root.rsi_list : TableRow {
+                                    for item in root.ma_table_list : TableRow {
                                         symbol: item.symbol;
-                                        name: item.vhtt;
+                                        name: item.vhtt; // Mapping Market Cap to 'Volume' column as requested
                                         rsi14: item.rsi14;
                                         rsi21: item.price;
                                     }

@@ -38,21 +38,6 @@ use aim_data::aim::fetch_finance_report_pdf;
 
 static MY_STOCK_LIST: [&str; 1] = ["AAA"];
 
-
-/// Main entry point of the application
-/// This function sets up the trading application with real-time stock data visualization
-// #[tokio::main]
-// async fn main() {
-//     env_logger::Builder::new()
-//         .filter_level(log::LevelFilter::Warn)
-//         .init();
-
-//     let ui = slint_generatedAppWindow::AppWindow::new().unwrap();
-//     register_rsi_sort_handler(&ui);
-//     let _rsi_task = spawn_rsi_task(&ui).await;
-//     ui.run().unwrap();
-// }
-
 #[tokio::main]
 async fn main() {
     //env_logger::init();

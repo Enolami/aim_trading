@@ -109,7 +109,9 @@ export component DashBoard inherits Rectangle {
     in property <[RsiData]> rsi_list;
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
-    in property <[CryptoData]> crypto_list; 
+    in property <[CryptoData]> crypto_list;
+    in property <float> rsi_overbought_pct: 0.0;
+    in property <float> rsi_oversold_pct: 0.0; 
     in property <DominanceChartData> dominance_data;
     in property <[CoinData]> crypto_coin_list; 
     in-out property <[SectorRangeSnapshot]> sector_ranges;
@@ -223,6 +225,8 @@ export component DashBoard inherits Rectangle {
                 coin_list: root.coin_list;
                 ma_list: root.ma_list;
                 crypto_list: root.crypto_list;
+                rsi_overbought_pct: root.rsi_overbought_pct;
+                rsi_oversold_pct: root.rsi_oversold_pct;
                 dominance_data: root.dominance_data;
                 crypto_coin_list: root.crypto_coin_list;
                 sector_ranges <=> root.sector_ranges;
@@ -276,6 +280,8 @@ export component AppWindow inherits Window {
     in-out property <[CoinData]> coin_list;
     in-out property <[MaData]> ma_list;
     in property <[CryptoData]> crypto_list; 
+    in-out property <float> rsi_overbought_pct: 0.0;
+    in-out property <float> rsi_oversold_pct: 0.0; 
     in property <DominanceChartData> dominance_data;
     in property <[CoinData]> crypto_coin_list; 
     in-out property <[SectorRangeSnapshot]> sector_ranges;
@@ -311,6 +317,8 @@ export component AppWindow inherits Window {
         coin_list <=> root.coin_list;
         ma_list <=> root.ma_list;
         crypto_list <=> root.crypto_list; 
+        rsi_overbought_pct <=> root.rsi_overbought_pct;
+        rsi_oversold_pct <=> root.rsi_oversold_pct;
         dominance_data <=> root.dominance_data;
         crypto_coin_list <=> root.crypto_coin_list;
         sector_ranges <=> root.sector_ranges;
