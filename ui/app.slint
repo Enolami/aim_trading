@@ -91,7 +91,8 @@ export component AppWindow inherits Window {
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
     in property <[CryptoData]> crypto_list; 
-    in property <DominanceChartData> dominance_data; 
+    in property <DominanceChartData> dominance_data;
+    in property <[CoinData]> crypto_coin_list; 
     // Dữ liệu phân bổ vốn hóa theo ngành (Streamgraph)
     in-out property <[SectorRangeSnapshot]> quantitative_sector_ranges: [];
 
@@ -352,6 +353,7 @@ export component AppWindow inherits Window {
                 ma_list: root.ma_list;
                 crypto_list: root.crypto_list;
                 dominance_data: root.dominance_data;
+                crypto_coin_list: root.crypto_coin_list;
                 sort_rsi14 => {root.sort_rsi14();}
 
                 report_selected(report_id) => {

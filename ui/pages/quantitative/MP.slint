@@ -289,25 +289,25 @@ export component RsiHeatmapChart inherits Rectangle {
                     Rectangle { background: Palette.zone-strong;
                     vertical-stretch: 25; }
                     Rectangle { background: Palette.zone-neutral;
-                    vertical-stretch: 20; }
+                    vertical-stretch: 25; }
                     Rectangle { background: Palette.zone-oversold;
-                    vertical-stretch: 30; }
+                    vertical-stretch: 25; }
                 }
 
-                Rectangle { height: 1px;
+                Rectangle { height: 1px; 
                 background: #ffffff10; y: parent.height * 0.25; }
                 Rectangle { height: 1px;
                 background: #ffffff10; y: parent.height * 0.50; }
                 Rectangle { height: 1px;
-                background: #ffffff10; y: parent.height * 0.70; }
+                background: #ffffff10; y: parent.height * 0.75; }
 
-                Rectangle { width: 1px;
+                Rectangle { width: 2px;
                 background: #ffffff05; x: parent.width * 0.15; }
-                Rectangle { width: 1px;
+                Rectangle { width: 2px;
                 background: #ffffff05; x: parent.width * 0.35; }
-                Rectangle { width: 1px;
+                Rectangle { width: 2px;
                 background: #ffffff05; x: parent.width * 0.60; }
-                Rectangle { width: 1px;
+                Rectangle { width: 2px;
                 background: #ffffff05; x: parent.width * 0.85; }
 
                 for coin in root.coins : CryptoDot {

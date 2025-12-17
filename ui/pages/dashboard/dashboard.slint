@@ -110,7 +110,8 @@ export component DashBoard inherits Rectangle {
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
     in property <[CryptoData]> crypto_list; 
-    in property <DominanceChartData> dominance_data; 
+    in property <DominanceChartData> dominance_data;
+    in property <[CoinData]> crypto_coin_list; 
     in-out property <[SectorRangeSnapshot]> sector_ranges;
     callback on_add_tag(string);
     callback on_remove_tag(int);
@@ -223,6 +224,7 @@ export component DashBoard inherits Rectangle {
                 ma_list: root.ma_list;
                 crypto_list: root.crypto_list;
                 dominance_data: root.dominance_data;
+                crypto_coin_list: root.crypto_coin_list;
                 sector_ranges <=> root.sector_ranges;
                 on_add_tag(tag) => {
                     root.on_add_tag(tag);
@@ -274,7 +276,8 @@ export component AppWindow inherits Window {
     in-out property <[CoinData]> coin_list;
     in-out property <[MaData]> ma_list;
     in property <[CryptoData]> crypto_list; 
-    in property <DominanceChartData> dominance_data; 
+    in property <DominanceChartData> dominance_data;
+    in property <[CoinData]> crypto_coin_list; 
     in-out property <[SectorRangeSnapshot]> sector_ranges;
     callback on_add_tag(string);
     callback on_remove_tag(int);
@@ -309,6 +312,7 @@ export component AppWindow inherits Window {
         ma_list <=> root.ma_list;
         crypto_list <=> root.crypto_list; 
         dominance_data <=> root.dominance_data;
+        crypto_coin_list <=> root.crypto_coin_list;
         sector_ranges <=> root.sector_ranges;
         on_add_tag(tag) => {
             root.on_add_tag(tag);

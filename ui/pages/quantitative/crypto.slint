@@ -1,21 +1,22 @@
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
-import {RsiHeatmapChart, CryptoDot, CoinData} from "MP.slint";
+import {CoinData, RsiHeatmapChart } from "MP.slint";
+
 export global Palette {
-    out property <color> bg-color: #111111; 
-    out property <color> card-bg: #1A1A1A; 
-    out property <color> sidebar-bg: #1E1E1E; 
-    out property <color> text-primary: #FFFFFF; 
-    out property <color> text-secondary: #AAAAAA; 
-    out property <color> text-muted: #666666; 
-    out property <color> zone-overbought: #381E22; 
-    out property <color> zone-strong: #2A2126; 
-    out property <color> zone-neutral: #1F232C; 
-    out property <color> zone-oversold: #182B28; 
-    out property <color> accent-blue: #4F46E5; 
-    out property <color> accent-cyan: #06B6D4; 
-    out property <color> accent-green: #10B981; 
-    out property <color> accent-red: #EF4444; 
-    out property <color> accent-grey: #B0B3B8; 
+    out property <color> bg-color: #111111;
+    out property <color> card-bg: #1A1A1A;
+    out property <color> sidebar-bg: #1E1E1E;
+    out property <color> text-primary: #FFFFFF;
+    out property <color> text-secondary: #AAAAAA;
+    out property <color> text-muted: #666666;
+    out property <color> zone-overbought: #381E22;
+    out property <color> zone-strong: #2A2126;     
+    out property <color> zone-neutral: #1F232C;   
+    out property <color> zone-oversold: #182B28;
+    out property <color> accent-blue: #4F46E5;
+    out property <color> accent-cyan: #06B6D4;
+    out property <color> accent-green: #10B981;
+    out property <color> accent-red: #EF4444;
+    out property <color> accent-grey: #B0B3B8;
     out property <color> crypto-red-1: #381E22; 
     out property <color> crypto-red-2: #451818; 
     out property <color> crypto-red-3: #4A192C; 
@@ -23,85 +24,92 @@ export global Palette {
     out property <color> crypto-red-5: #501010; 
     out property <color> crypto-green-1: #182B28; 
     out property <color> crypto-green-2: #103320; 
-    out property <color> crypto-green-3: #0E3A32; 
-    // Bitcoin Dominance Chart Specifics 
-    out property <color> btc-orange: #F7931A; 
-    out property <color> eth-blue: #1652F0; 
-    out property <color> others-grey: #888888; 
-    out property <color> chart-bg: #141416; 
-} 
+    out property <color> crypto-green-3: #0E3A32;
     
-export struct CryptoData { 
-    symbol: string, 
-    open: string, 
-    high: string, 
-    low: string, 
-    close: string, 
-    change_percentage: string, 
-    change_value: string, 
-    is_positive: bool, 
-    chart_data: string, 
-} 
+    // Bitcoin Dominance Chart Specifics
+    out property <color> btc-orange: #F7931A;
+    out property <color> eth-blue: #1652F0;
+    out property <color> others-grey: #888888;
+    out property <color> chart-bg: #141416;
+}
 
+export struct CryptoData {
+    symbol: string,
+    open: string,
+    high: string,
+    low: string,
+    close: string,
+    change_percentage: string,
+    change_value: string,
+    is_positive: bool,
+    chart_data: string,
+}
+
+// Updated Struct to hold the generated image AND values/positions
 export struct DominanceChartData {
-    btc_path: string, 
-    eth_path: string, 
-    others_path: string, 
-    btc_value: string, 
-    eth_value: string, 
-    others_value: string, 
-} 
+    chart_image: image,
+    // Values and Positions
+    btc_value: string,
+    eth_value: string,
+    others_value: string,
+    btc_y: float,
+    eth_y: float,
+    others_y: float,
+}
 
-// --- NEW COMPONENT: Simple Tab Bar --- 
-export component HorizontalTabBar { 
-    in property <[string]> tabs: ["Asset Correlation", "Price - Trade Heatmap", "Return Matrix", "Technical Indicator", "Basic Statistical", "Technical Indicator Statistics", "Crypto Analysis"]; 
-    in-out property <int> selected: 0; 
-    callback on_tab_selected(index: int); 
-    //local variables 
-    property <color> bg-tab-selected: #18d6c2; 
-    property <color> bg-tab-unselected: #444 ; 
-    property <color> bg-tab: #666 ; 
-    preferred-width: 1200px; 
-    height: 40px; 
+// --- NEW COMPONENT: Simple Tab Bar ---
+export component HorizontalTabBar {
+    in property <[string]> tabs: ["Asset Correlation", "Price - Trade Heatmap", "Return Matrix", "Technical Indicator", "Basic Statistical", "Technical Indicator Statistics", "Crypto Analysis"];
+    in-out property <int> selected: 0;
+    callback on_tab_selected(index: int);
+    //local variables
+    property <color> bg-tab-selected: #18d6c2;
+    property <color> bg-tab-unselected: #444 ;
+    property <color> bg-tab: #666 ;
+    preferred-width: 1200px;
+    height: 40px;
     Rectangle {
-        width: parent.width; 
-        height: parent.height; 
-        background: Palette.card-bg; 
-        //background: bg-tab; 
-        HorizontalLayout { 
-            spacing: 8px; 
-            alignment: start; 
-            width: parent.width; 
-            height: parent.height; 
-            padding-top: 8px; 
-            padding-left: 8px; 
-            for tab[i] in root.tabs: Rectangle { 
-                height: parent.height - 16px; 
-                width:text.width + 20px; 
-                background: i == root.selected ? root.bg-tab-selected : transparent; 
-                border-radius: 8px; 
-                states [ 
-                    hover when touch_area.has-hover: { 
-                        background: i == root.selected ? root.bg-tab-selected : root.bg-tab-unselected; 
-                    } 
-                ] 
-                text:= Text { 
-                    text: tab; 
-                    color: i == root.selected ? #fff : #e0e0e0; 
-                    font-size: 14px; 
-                    font-weight: 700; 
-                    vertical-alignment: center; 
-                    horizontal-alignment: center; 
-                } 
-                touch_area := TouchArea { 
-                    clicked => { root.selected = i; root.on_tab_selected(i); } 
-                } 
-            } 
-        } 
-    } 
-} 
+        width: parent.width;
+        height: parent.height;
+        background: Palette.card-bg;
+        //background: bg-tab;
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            width: parent.width;
+            height: parent.height;
+            padding-top: 8px;
+            padding-left: 8px;
+            for tab[i] in root.tabs: Rectangle {
+                height: parent.height - 16px;
+                width:text.width + 20px;
+                background: i == root.selected ? root.bg-tab-selected : transparent;
+                border-radius: 8px;
+                states [
+                    hover when touch_area.has-hover: {
+                        background: i == root.selected ? root.bg-tab-selected : root.bg-tab-unselected;
+                    }
+                ]
+                text:= Text {
+                    text: tab;
+                    color: i == root.selected ? #fff : #e0e0e0;
+                    font-size: 14px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+                touch_area := TouchArea {
+                    clicked => {
+                        root.selected = i;
+                        root.on_tab_selected(i);
+                    }
+                }
+            }
+        }
+    }
+}
 
-export component TickerTile inherits Rectangle {
+export component TickerTile inherits Rectangle { 
     in property <string> ticker-symbol: "BTC/USDT"; 
     in property <string> price: "0.00"; 
     in property <string> change-percentage: "+0.00%"; 
@@ -116,499 +124,373 @@ export component TickerTile inherits Rectangle {
     background: root.custom-bg; 
     border-radius: 6px; 
     height: 90px; 
-    
     // --- CHART AREA (Layer 1: Background) --- 
     // Moved out of VerticalLayout to occupy the full tile size 
     Rectangle { 
         width: 100%; 
         height: 100%; 
-        background: transparent; 
-        horizontal-stretch: 1; 
+        background: transparent;
+        horizontal-stretch: 1;
         Path { 
             width: 100%; 
             height: 100%; 
             stroke: root.is-positive ? Palette.accent-green : Palette.accent-red; 
-            stroke-width: 1.5px;
-            // Map the 0..100 coordinate system from backend to the full tile size 
-            // viewbox-x: 0; 
-            // viewbox-y: 0; 
-            // viewbox-width: 100; 
-            // viewbox-height: 100; 
+            stroke-width: 1.5px; 
             // Direct command binding 
-            commands: root.chart-data; } 
-        } 
-        
-        // --- CONTENT AREA (Layer 2: Foreground) --- 
-        VerticalLayout { 
-            padding: 8px; 
-            spacing: 4px; 
-            HorizontalLayout { 
-                alignment: space-between; 
-                Text { 
-                    text: root.ticker-symbol; 
-                    font-weight: 700; 
-                    color: Palette.text-primary; 
-                    font-size: 11px; 
-                } 
-                Text { 
-                    text: root.change-percentage; 
-                    color: root.is-positive ? Palette.accent-green : Palette.accent-red; 
-                    font-size: 10px; font-weight: 600; 
-                } 
-            } 
-            HorizontalLayout { 
-                spacing: 4px; 
-                Text { 
-                    text: root.price; 
-                    font-size: 16px; 
-                    font-weight: 700; 
-                    color: Palette.text-primary; 
-                    vertical-alignment: center; 
-                } 
-                VerticalLayout { 
-                    spacing: 2px; 
-                    alignment: end; 
-                    Text { 
-                        text: root.high-price; 
-                        font-size: 9px; 
-                        color: Palette.text-secondary; 
-                        horizontal-alignment: right; 
-                    } 
-                    HorizontalLayout { 
-                        alignment: end; 
-                        Rectangle { 
-                            background: transparent; 
-                            HorizontalLayout { 
-                                Text { 
-                                    text: root.low-price; 
-                                    font-size: 9px; 
-                                    color: Palette.text-secondary; 
-                                    horizontal-alignment: right; 
-                                } 
-                            } 
-                        } 
-                    } 
-                } 
-            } 
+            commands: root.chart-data; 
         } 
     } 
-component BitcoinDominanceChart inherits Rectangle { 
-    in property <DominanceChartData> chart-data; 
-    // Root background is now card-bg, so the header/footer blend with the card 
-    background: Palette.card-bg; 
-    border-radius: 12px; 
-    padding: 20px; 
+    // --- CONTENT AREA (Layer 2: Foreground) --- 
     VerticalLayout { 
-        spacing: 15px; 
-        // 1. Header Row (Outside the chart plot area) 
+        padding: 8px; 
+        spacing: 4px; 
         HorizontalLayout { 
             alignment: space-between; 
-            height: 40px; 
-            // Fixed height for header 
-            // Left: Title and Legend 
+            Text { 
+                text: root.ticker-symbol; 
+                font-weight: 700; 
+                color: Palette.text-primary; 
+                font-size: 11px; 
+            } 
+            Text { 
+                text: root.change-percentage; 
+                color: root.is-positive ? Palette.accent-green : Palette.accent-red; 
+                font-size: 10px; 
+                font-weight: 600; 
+            } 
+        } 
+        HorizontalLayout { 
+            spacing: 4px; 
+            Text { 
+                text: root.price; 
+                font-size: 16px; 
+                font-weight: 700; 
+                color: Palette.text-primary; 
+                vertical-alignment: center; 
+            } 
             VerticalLayout { 
-                spacing: 4px; 
+                spacing: 2px; 
+                alignment: end; 
                 Text { 
-                    text: "Bitcoin Dominance Chart"; 
-                    color: white; 
-                    font-size: 18px; 
-                    font-weight: 700; 
+                    text: root.high-price; 
+                    font-size: 9px; color: Palette.text-secondary; 
+                    horizontal-alignment: right; 
                 } 
                 HorizontalLayout { 
-                    spacing: 15px; 
-                    HorizontalLayout { 
-                        spacing: 6px; 
-                        Rectangle { 
-                            width: 8px; 
-                            height: 8px; 
-                            border-radius: 4px; 
-                            background: Palette.btc-orange; 
-                            y: 6px; 
+                    alignment: end; 
+                    Rectangle { 
+                        background: transparent; 
+                        HorizontalLayout { 
+                            Text { 
+                                text: root.low-price; 
+                                font-size: 9px; 
+                                color: Palette.text-secondary; 
+                                horizontal-alignment: right; 
+                            } 
                         } 
-                        Text { 
-                            text: "Bitcoin"; 
-                            color: Palette.text-secondary; 
-                            font-size: 12px; 
-                        } 
-                    } 
-                    HorizontalLayout { 
-                        spacing: 6px; 
-                        Rectangle { 
-                            width: 8px; 
-                            height: 8px; 
-                            border-radius: 4px; 
-                            background: Palette.eth-blue; 
-                            y: 6px; 
-                        } 
-                        Text { 
-                            text: "Ethereum"; 
-                            color: Palette.text-secondary; 
-                            font-size: 12px; 
-                        } 
-                    } 
-                    HorizontalLayout { 
-                        spacing: 6px; 
-                        Rectangle { 
-                            width: 8px; 
-                            height: 8px; 
-                            border-radius: 4px; 
-                            background: Palette.others-grey; 
-                            y: 6px; 
-                        } 
-                        Text { 
-                            text: "Others"; 
-                            color: Palette.text-secondary; 
-                            font-size: 12px; 
-                        } 
-                    } 
+                    }
                 } 
-            } 
-            
-            // Right: Controls 
-            HorizontalLayout { 
-                spacing: 10px; 
-                alignment: end; 
+            }
+        } 
+    } 
+}
+
+component BitcoinDominanceChart inherits Rectangle {
+    in property <DominanceChartData> chart-data;
+
+    // Root background is now card-bg, so the header/footer blend with the card
+    background: Palette.card-bg; 
+    border-radius: 12px;
+    padding: 20px;
+
+    VerticalLayout {
+        spacing: 15px;
+
+        // 1. Header Row (Outside the chart plot area)
+        HorizontalLayout {
+            alignment: space-between;
+            height: 40px; // Fixed height for header
+
+            // Left: Title and Legend
+            VerticalLayout {
+                spacing: 4px;
+                Text {
+                    text: "Bitcoin Dominance Chart";
+                    color: white;
+                    font-size: 18px;
+                    font-weight: 700;
+                }
+                HorizontalLayout {
+                    spacing: 15px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.btc-orange; y: 6px; }
+                        Text { text: "Bitcoin"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.eth-blue; y: 6px; }
+                        Text { text: "Ethereum"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.others-grey; y: 6px; }
+                        Text { text: "Others"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                }
+            }
+            // Right: Controls
+            HorizontalLayout {
+                spacing: 10px;
+                alignment: end;
                 
-                // Mode Toggle 
-                Rectangle { 
-                    background: #222; 
-                    border-radius: 6px; 
-                    width: 185px; 
-                    
-                    // Fixed width for layout stability 
-                    HorizontalLayout { 
-                        padding: 2px; 
-                        spacing: 2px; 
-                        Rectangle { 
-                            width: 110px; 
-                            height: 28px; 
-                            border-radius: 4px; 
-                            background: #333; 
-                            // Active 
-                            Text { 
-                                text: "Bitcoin Dominance"; 
-                                color: white; 
-                                font-size: 11px; 
-                                font-weight: 600; 
-                                horizontal-alignment: center; 
-                                vertical-alignment: center; 
-                            } 
-                        } 
-                        Rectangle { 
-                            width: 70px; 
-                            height: 28px; 
-                            border-radius: 4px; 
-                            background: transparent; 
-                            Text { 
-                                text: "Top Coins"; 
-                                color: Palette.text-secondary; 
-                                font-size: 11px; 
-                                horizontal-alignment: center; 
-                                vertical-alignment: center; 
-                            } 
-                        } 
-                    } 
-                } 
-                // Timeframe Toggle 
-                Rectangle { 
-                    background: #222; 
-                    border-radius: 6px; 
-                    width: 115px; 
-                    HorizontalLayout { 
-                        padding: 2px; 
-                        spacing: 2px; 
-                        Rectangle { 
-                            width: 35px; 
-                            height: 28px; 
-                            border-radius: 4px; 
-                            background: transparent; 
-                            Text { 
-                                text: "30d"; 
-                                color: Palette.text-secondary; 
-                                font-size: 11px; 
-                                horizontal-alignment: center; 
-                                vertical-alignment: center; 
-                            } 
-                        } 
-                        Rectangle { 
-                            width: 35px; 
-                            height: 28px; 
-                            border-radius: 4px; 
-                            background: transparent; 
-                            Text { 
-                                text: "1y"; 
-                                color: Palette.text-secondary; 
-                                font-size: 11px; 
-                                horizontal-alignment: center; 
-                                vertical-alignment: center; 
-                            } 
-                        } 
-                        Rectangle { 
-                            width: 35px; 
-                            height: 28px; 
-                            border-radius: 4px; 
-                            background: #333; 
-                            
-                            // Active 
-                            Text { 
-                                text: "All"; 
-                                color: white; 
-                                font-size: 11px; 
-                                font-weight: 600; 
-                                horizontal-alignment: center; 
-                                vertical-alignment: center; 
-                            } 
-                        } 
-                    } 
-                } 
-            } 
-        } 
-        // 2. Chart Plot Area (The "Red Box" Area) 
-        // This contains the grid, paths, and Y-axis labels. 
-        HorizontalLayout { 
-            chartArea:=Rectangle { 
-                vertical-stretch: 1; 
-                width: 95%; 
-                background: Palette.chart-bg; // Darker chart background applied ONLY here 
-                border-radius: 4px; 
-                clip: true; // Keeps paths strictly inside 
-                // --- Grid Lines (Dotted) --- 
-                Rectangle { 
-                    width: 100%; 
-                    height: 100%; 
-                    Rectangle { height: 1px; width: parent.width; x: 0; y: parent.height * 0.25; background: #2A2A2E; } 
-                    Rectangle { height: 1px; width: parent.width; x: 0; y: parent.height * 0.50; background: #2A2A2E; } 
-                    Rectangle { height: 1px; width: parent.width; x: 0; y: parent.height * 0.75; background: #2A2A2E; } 
-                } 
-                // --- DATA PATHS --- 
-                // 1. Bitcoin Line (Orange) 
-                Path { 
-                    width: 100%; 
-                    height: 100%; 
-                    //viewbox-width: 100; viewbox-height: 100; 
-                    stroke: Palette.btc-orange; 
-                    stroke-width: 2px; 
-                    commands: root.chart-data.btc_path; 
-                    //commands: "M0,85, L2,83 L4,82 L6,80 L8,78 L10,75, L12,72 L14,70 L16,67 L18,64 L20,60, L22,56 L24,52 L26,48 L28,45 L30,42, L32,40 L34,38 L36,36 L38,35 L40,34, L42,33 L44,32 L46,31 L48,30 L50,29, L52,28 L54,27 L56,26 L58,25 L60,24,L62,23 L64,22 L66,21 L68,20 L70,22, L72,26 L74,34 L76,46 L78,60 L80,72, L82,82 L84,88 L86,92 L88,95 L90,97, L92,90 L94,85 L96,83 L98,84 L100,85";
-                } 
-                // 2. Others Line (Grey) 
-                Path { 
-                    width: 100%; 
-                    height: 100%; 
-                    //viewbox-width: 100; viewbox-height: 100; 
-                    stroke: Palette.others-grey; 
-                    stroke-width: 1.5px; 
-                    commands: root.chart-data.others_path; 
-                    //commands: "M0,40, L2,42 L4,45 L6,48 L8,52 L10,55,L12,58 L14,60 L16,62 L18,63 L20,65 ,L22,66 L24,67 L26,66 L28,65 L30,64,L32,63 L34,62 L36,61 L38,60 L40,59,L42,57 L44,55 L46,52 L48,48 L50,45, L52,42 L54,40 L56,38 L58,35 L60,32, L62,30 L64,28 L66,25 L68,23 L70,22, L72,24 L74,28 L76,35 L78,45 L80,55, L82,65 L84,72 L86,78 L88,82 L90,85, L92,83 L94,80 L96,82 L98,84 L100,86";                
-                } 
-                // 3. Ethereum Line (Blue) 
-                Path { 
-                    width: 100%; 
-                    height: 100%; 
-                    //viewbox-width: 100; viewbox-height: 100; 
-                    stroke: Palette.eth-blue; 
-                    stroke-width: 1.5px; 
-                    commands: root.chart-data.eth_path; 
-                    //commands: "M0,65, L2,64 L4,66 L6,65 L8,67 L10,66, L12,68 L14,67 L16,69 L18,68 L20,70, L22,68 L24,69 L26,67 L28,68 L30,66, L32,65 L34,63 L36,62 L38,64 L40,66, L42,68 L44,70 L46,73 L48,75 L50,78, L52,76 L54,74 L56,72 L58,70 L60,68, L62,66 L64,64 L66,62 L68,60 L70,58, L72,56 L74,54 L76,52 L78,50 L80,48, L82,46 L84,44 L86,42 L88,40 L90,38, L92,36 L94,35 L96,34 L98,33 L100,32";
-                } 
-            } 
-            VerticalLayout { 
-                width: 5%; 
-                // --- Y-Axis Labels (Right Side - Percentage) --- 
-                // Rendered inside the chart area as per reference image 
-                Rectangle { 
-                    width: 100%; 
-                    height: 100%; 
-                    Text { text: "100.00%"; y: 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; } 
-                    Text { text: "75.00%"; y: chartArea.height * 0.25 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; } 
-                    Text { text: "50.00%"; y: chartArea.height * 0.50 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; } 
-                    Text { text: "25.00%"; y: chartArea.height * 0.75 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; } 
-                    Text { text: "0.00%"; y: chartArea.height - 15px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; } 
-                    // --- END TAGS (Value Indicators) --- 
-                    // These float over the chart area 
-                    Rectangle { 
-                        //y: chartArea.height * (root.chart-data.btc_value.to-float()/100) - 10px; // Dynamic positioning would be better, using fixed for now 
-                        width: 50px; 
-                        height: 20px; 
-                        background: Palette.btc-orange; 
-                        border-radius: 4px; 
-                        Text { 
-                            text: root.chart-data.btc_value; 
-                            color: white; 
-                            font-size: 10px; 
-                            font-weight: 700; 
-                            horizontal-alignment: center; 
-                            vertical-alignment: center; 
-                        } 
-                    } 
-                    Rectangle { 
-                        y: chartArea.height * 0.72 - 10px; 
-                        width: 50px; 
-                        height: 20px; 
-                        background: #444; 
-                        border-radius: 4px; 
-                        Text { 
-                            text: root.chart-data.others_value; 
-                            color: white; 
-                            font-size: 10px; 
-                            font-weight: 700; 
-                            horizontal-alignment: center; 
-                            vertical-alignment: center; 
-                        } 
-                    } 
-                    Rectangle { 
-                        y: chartArea.height * 0.88 - 10px; 
-                        width: 50px; 
-                        height: 20px;
-                        background: Palette.eth-blue; 
-                        border-radius: 4px; 
-                        Text { 
-                            text: root.chart-data.eth_value; 
-                            color: white; 
-                            font-size: 10px; 
-                            font-weight: 700; 
-                            horizontal-alignment: center; 
-                            vertical-alignment: center; 
-                        } 
-                    } 
-                } 
-            } 
-        } 
-        // 3. X-Axis Labels (Footer Row) 
-        HorizontalLayout { 
-            alignment: space-between; 
-            height: 15px; 
+                // Mode Toggle
+                Rectangle {
+                    background: #222;
+                    border-radius: 6px;
+                    width: 185px; // Fixed width for layout stability
+                    HorizontalLayout {
+                        padding: 2px;
+                        spacing: 2px;
+                        Rectangle {
+                            width: 110px; height: 28px; border-radius: 4px; background: #333; // Active
+                            Text { text: "Bitcoin Dominance"; color: white; font-size: 11px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 70px; height: 28px; border-radius: 4px; background: transparent;
+                            Text { text: "Top Coins"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                }
+
+                // Timeframe Toggle
+                Rectangle {
+                    background: #222;
+                    border-radius: 6px;
+                    width: 115px;
+                    HorizontalLayout {
+                        padding: 2px;
+                        spacing: 2px;
+                        Rectangle {
+                            width: 35px; height: 28px; border-radius: 4px; background: transparent;
+                            Text { text: "30d"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 35px; height: 28px; border-radius: 4px; background: transparent;
+                            Text { text: "1y"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 35px; height: 28px; border-radius: 4px; background: #333; // Active
+                            Text { text: "All"; color: white; font-size: 11px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Chart Plot Area (The "Red Box" Area)
+        HorizontalLayout {
+            chartArea:=Rectangle {
+                vertical-stretch: 1;
+                width: 95%;
+                background: Palette.chart-bg; 
+                border-radius: 4px;
+                clip: true; 
+
+                // --- IMAGE DISPLAY ---
+                Image {
+                    width: 100%;
+                    height: 100%;
+                    source: root.chart-data.chart_image; 
+                    image-fit: fill;
+                }
+            }
+
+            VerticalLayout {
+                width: 5%;
+                // Y-Axis Labels (Right Side - Percentage)
+                Rectangle {
+                    width: 100%; height: 100%;
+                    Text { text: "100.00%"; y: 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                    Text { text: "75.00%"; y: chartArea.height * 0.25 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                    Text { text: "50.00%"; y: chartArea.height * 0.50 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                    Text { text: "25.00%"; y: chartArea.height * 0.75 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                    Text { text: "0.00%"; y: chartArea.height - 15px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                
+                    // --- END TAGS (Value Indicators) ---
+                    // Dynamically positioned based on data from backend
+                    Rectangle {                        
+                        y: (chartArea.height * (root.chart-data.btc_y / 100)) - 10px;
+                        width: 50px; height: 20px;
+                        background: Palette.btc-orange;
+                        border-radius: 4px;
+                        Text { text: root.chart-data.btc_value; color: white; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    Rectangle {                       
+                        y: (chartArea.height * (root.chart-data.others_y / 100)) - 10px;
+                        width: 50px; height: 20px;
+                        background: #444;
+                        border-radius: 4px;
+                        Text { text: root.chart-data.others_value; color: white; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    Rectangle {
+                        y: (chartArea.height * (root.chart-data.eth_y / 100)) - 10px;
+                        width: 50px; height: 20px;
+                        background: Palette.eth-blue;
+                        border-radius: 4px;
+                        Text { text: root.chart-data.eth_value; color: white; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
+            }
+        }
+        // 3. X-Axis Labels (Footer Row)
+        HorizontalLayout {
+            alignment: space-between;
+            height: 15px;
             padding-right: 50px; 
-            // Align with chart area excluding right axis labels 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; } 
-        } 
-    } 
-} 
-export component Crypto inherits Rectangle { 
-    in property <[CryptoData]> crypto_list; 
-    in property <DominanceChartData> dominance_data; 
-    // Track selected tab for the right section 
-    property <int> selected_right_tab: 0; 
-    preferred-width: 980px; 
-    preferred-height: 800px; 
-    background: Palette.bg-color; 
-    HorizontalLayout { 
-        // ========================================== 
-        // SECTION 1: Left Sidebar 
-        // ========================================== 
-        sidebar := Rectangle { 
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+            Text { text: "01 Jan"; color: Palette.text-muted; font-size: 10px; }
+        }
+    }
+}
+
+export component Crypto inherits Rectangle {
+    in property <[CryptoData]> crypto_list;
+    in property <DominanceChartData> dominance_data;
+    in property <[CoinData]> crypto_coin_list;
+    // Track selected tab for the right section
+    property <int> selected_right_tab: 0;
+
+    preferred-width: 980px;
+    preferred-height: 800px;
+    background: Palette.bg-color;
+
+    HorizontalLayout {
+        // ==========================================
+        // SECTION 1: Left Sidebar
+        // ==========================================
+        sidebar := Rectangle {
             width: 25%; 
-            background: Palette.sidebar-bg; 
-            border-color: Palette.card-bg; 
-            border-width: 1px; 
-            VerticalLayout { 
-                padding: 10px; 
-                spacing: 10px; 
+            background: Palette.sidebar-bg;
+            border-color: Palette.card-bg;
+            border-width: 1px;
+
+            VerticalLayout {
+                padding: 10px;
+                spacing: 10px;
                 alignment: start; 
-                Text { 
-                    text: "DANH MỤC THEO DÕI"; 
-                    color: Palette.text-muted; 
-                    font-weight: 600; 
-                    font-size: 11px; 
-                    letter-spacing: 0.5px; 
-                } 
-                Flickable { 
-                    interactive: true; 
-                    viewport-height: ticker-list.preferred-height; 
-                    ticker-list := VerticalLayout { 
-                        padding-bottom: 20px; 
-                        width: 100%; 
-                        spacing: 8px; 
-                        for i in (root.crypto_list.length + 1) / 2 : HorizontalLayout { 
-                            spacing: 8px; 
-                            property <int> idx1: i * 2; 
-                            property <int> idx2: i * 2 + 1; 
-                            if (idx1 < root.crypto_list.length) : TickerTile { 
-                                property <CryptoData> item: root.crypto_list[idx1]; 
-                                ticker-symbol: item.symbol; 
-                                price: item.close; 
-                                high-price: "H " + item.high; 
-                                low-price: "L " + item.low; 
-                                change-percentage: item.change_percentage; 
-                                change-value: item.change_value; 
-                                is-positive: item.is_positive; 
+
+                Text {
+                    text: "DANH MỤC THEO DÕI";
+                    color: Palette.text-muted;
+                    font-weight: 600;
+                    font-size: 11px;
+                    letter-spacing: 0.5px;
+                }
+
+                Flickable {
+                    interactive: true;
+                    viewport-height: ticker-list.preferred-height;
+
+                    ticker-list := VerticalLayout {
+                        padding-bottom: 20px;
+                        width: 100%;
+                        spacing: 8px;
+
+                        for i in (root.crypto_list.length + 1) / 2 : HorizontalLayout {
+                            spacing: 8px;
+                            property <int> idx1: i * 2;
+                            property <int> idx2: i * 2 + 1;
+
+                            if (idx1 < root.crypto_list.length) : TickerTile {
+                                property <CryptoData> item: root.crypto_list[idx1];
+                                ticker-symbol: item.symbol;
+                                price: item.close;
+                                high-price: "H " + item.high;
+                                low-price: "L " + item.low;
+                                change-percentage: item.change_percentage;
+                                change-value: item.change_value;
+                                is-positive: item.is_positive;
                                 chart-data: item.chart_data; 
-                            } 
-                            if (idx2 < root.crypto_list.length) : TickerTile { 
-                                property <CryptoData> item: root.crypto_list[idx2]; 
-                                ticker-symbol: item.symbol; 
-                                price: item.close; 
-                                high-price: "H " + item.high; 
-                                low-price: "L " + item.low; 
-                                change-percentage: item.change_percentage; 
-                                change-value: item.change_value; 
-                                is-positive: item.is_positive; 
+                            }
+
+                            if (idx2 < root.crypto_list.length) : TickerTile {
+                                property <CryptoData> item: root.crypto_list[idx2];
+                                ticker-symbol: item.symbol;
+                                price: item.close;
+                                high-price: "H " + item.high;
+                                low-price: "L " + item.low;
+                                change-percentage: item.change_percentage;
+                                change-value: item.change_value;
+                                is-positive: item.is_positive;
                                 chart-data: item.chart_data; 
-                            } 
-                            if (idx2 >= root.crypto_list.length) : Rectangle { 
-                                background: transparent; 
-                                horizontal-stretch: 1; 
-                            } 
-                        } 
-                    } 
-                } 
-            } 
-        } 
-        // ========================================== 
-        // SECTION 2: Right Content 
-        // ========================================== 
-        Rectangle { 
-            background: Palette.bg-color; 
-            //horizontal-stretch: 1; 
-            VerticalLayout { 
-                padding: 20px; 
-                spacing: 20px; 
-                // --- 1. Tab Bar --- 
-                HorizontalTabBar { 
-                    tabs: ["Tab 1", "Tab 2", "Tab 3", "Tab 4"]; 
-                    selected <=> root.selected_right_tab; 
-                } 
-                // --- 2. Chart Area (Placeholder) --- 
-                Rectangle { 
-                    background: Palette.card-bg; 
-                    border-radius: 12px; 
-                    vertical-stretch: 1; // Fill remaining height 
-                    // Content changes based on selected tab 
-                    if root.selected_right_tab == 0 : BitcoinDominanceChart { 
-                        width: parent.width; 
-                        height: parent.height; 
-                        chart-data: root.dominance_data; 
-                    } 
-                    if root.selected_right_tab == 1 : Text { 
-                        text: "Content for Tab 2"; 
-                        color: Palette.text-muted; 
-                        font-size: 18px; 
-                        horizontal-alignment: center; 
-                        vertical-alignment: center; 
-                    } 
-                    if root.selected_right_tab == 2 : Text { 
-                        text: "Content for Tab 3"; 
-                        color: Palette.text-muted; 
-                        font-size: 18px; 
-                        horizontal-alignment: center; 
-                        vertical-alignment: center; 
-                    } 
-                    if root.selected_right_tab == 3 : Text { 
-                        text: "Content for Tab 4"; 
-                        color: Palette.text-muted; 
-                        font-size: 18px; 
-                        horizontal-alignment: center; 
-                        vertical-alignment: center; 
-                    } 
-                } 
-            } 
-        } 
-    } 
+                            }
+
+                            if (idx2 >= root.crypto_list.length) : Rectangle {
+                                background: transparent;
+                                horizontal-stretch: 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // SECTION 2: Right Content
+        // ==========================================
+        Rectangle {
+            background: Palette.bg-color;
+            //horizontal-stretch: 1;              
+            VerticalLayout {
+                padding: 20px;
+                spacing: 20px;
+
+                // --- 1. Tab Bar ---
+                HorizontalTabBar {
+                    tabs: ["Tab 1", "Tab 2", "Tab 3", "Tab 4"];
+                    selected <=> root.selected_right_tab;
+                }
+
+                // --- 2. Chart Area (Placeholder) ---
+                Rectangle {
+                    background: Palette.card-bg;
+                    border-radius: 12px;
+                    vertical-stretch: 1; // Fill remaining height
+
+                    // Content changes based on selected tab
+                    if root.selected_right_tab == 0 : BitcoinDominanceChart {
+                        width: parent.width;
+                        height: parent.height;
+                        chart-data: root.dominance_data;
+                    }
+                    if root.selected_right_tab == 1 : RsiHeatmapChart {
+                        width: 100%;
+                        height: 100%;
+                        coins: root.crypto_coin_list;
+                    }
+                    if root.selected_right_tab == 2 : Text {
+                        text: "Content for Tab 3";
+                        color: Palette.text-muted;
+                        font-size: 18px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    if root.selected_right_tab == 3 : Text {
+                        text: "Content for Tab 4";
+                        color: Palette.text-muted;
+                        font-size: 18px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
 }

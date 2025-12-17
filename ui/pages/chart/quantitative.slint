@@ -10,7 +10,8 @@ export component QuantitativeAnalysis inherits Rectangle {
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
     in property <[CryptoData]> crypto_list; 
-    in property <DominanceChartData> dominance_data; 
+    in property <DominanceChartData> dominance_data;
+    in property <[CoinData]> crypto_coin_list; 
     in-out property <[SectorRangeSnapshot]> sector_ranges;
 
     callback on_add_tag(string);
@@ -47,5 +48,6 @@ export component QuantitativeAnalysis inherits Rectangle {
         sort_rsi14 => {root.sort_rsi14();}
         crypto_list: root.crypto_list;
         dominance_data: root.dominance_data;
+        crypto_coin_list: root.crypto_coin_list;
         sector_ranges <=> root.sector_ranges;
     }} 

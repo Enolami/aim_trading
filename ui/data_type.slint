@@ -234,23 +234,25 @@ export struct MaData {
     y: float,        
 }
 
-export struct CryptoData { 
-    symbol: string, 
-    open: string, 
-    high: string, 
-    low: string, 
-    close: string, 
-    change_percentage: string, 
-    change_value: string, 
-    is_positive: bool, 
-    chart_data: string, 
-} 
+export struct CryptoData {
+    symbol: string,
+    open: string,
+    high: string,
+    low: string,
+    close: string,
+    change_percentage: string,
+    change_value: string,
+    is_positive: bool,
+    chart_data: string,
+}
 
 export struct DominanceChartData {
-    btc_path: string, 
-    eth_path: string, 
-    others_path: string, 
-    btc_value: string, 
-    eth_value: string, 
-    others_value: string, 
-} 
+    chart_image: image,
+    // Values and Positions
+    btc_value: string,
+    eth_value: string,
+    others_value: string,
+    btc_y: float,
+    eth_y: float,
+    others_y: float,
+}

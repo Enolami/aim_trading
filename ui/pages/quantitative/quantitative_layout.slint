@@ -582,6 +582,7 @@ export component QuantitativeLayout inherits Rectangle {
 
     in property <[CryptoData]> crypto_list; 
     in property <DominanceChartData> dominance_data; 
+    in property <[CoinData]> crypto_coin_list;
 
     callback sort_rsi14();
 
@@ -676,6 +677,7 @@ export component QuantitativeLayout inherits Rectangle {
                     height: 100%;
                     crypto_list: root.crypto_list;
                     dominance_data: root.dominance_data;
+                    crypto_coin_list: root.crypto_coin_list;
                 }
             }
         }

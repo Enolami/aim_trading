@@ -29,7 +29,7 @@ use tasks::{
     spawn_stock_update_task, spawn_trading_volume_task, spawn_ui_chart_task,
     spawn_finance_report_task, spawn_finance_pdf_selected_task, render_pdf_to_png_paths,
     spawn_rsi_task, register_rsi_sort_handler,
-    spawn_crypto_task, spawn_dominance_task,
+    spawn_crypto_task, spawn_dominance_task, spawn_crypto_rsi_task,
     spawn_top10_market_cap_task, spawn_icb_index_filtered_task
 };
 use aim_data::aim::fetch_finance_report_pdf;
@@ -517,6 +517,7 @@ async fn main() {
 
     let _crypto_task = spawn_crypto_task(&ui).await;
     let _dominance_task = spawn_dominance_task(&ui).await;
+    let _crypto_rsi_task = spawn_crypto_rsi_task(&ui).await;
 
     // Gọi task fetch dữ liệu Market Cap cho Quantitative Analysis
     let _top10_market_cap_handle = spawn_top10_market_cap_task(&ui).await; // fetch Top 10 Market Cap data

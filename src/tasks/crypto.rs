@@ -1,49 +1,118 @@
 use crate::tasks::task_manager::{register_task, TaskStatus};
 use crate::AppWindow;
-use aim_data::aim::{fetch_crypto_data, fetch_dominance_data, CryptoData, DominanceData};
-use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use aim_data::aim::{fetch_crypto_data, fetch_dominance_data, fetch_crypto_rsi_data, CryptoData, DominanceData, CryptoRsiData};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel, Image, SharedPixelBuffer, Rgb8Pixel};
 use crate::slint_generatedAppWindow::CryptoData as SlintCryptoData;
 use crate::slint_generatedAppWindow::DominanceChartData as SlintDominanceChartData;
-use rand::Rng; // For dummy data generation
+use crate::slint_generatedAppWindow::CoinData as SlintCoinData;
+use rand::Rng;
 
-// Function to simulate backend API response using DominanceData
+// --- CHART DRAWING HELPER ---
+// Returns a SharedPixelBuffer which is Send, unlike Image in some contexts
+fn generate_chart_buffer(data: &Vec<DominanceData>, width: u32, height: u32) -> SharedPixelBuffer<Rgb8Pixel> {
+    let mut buffer = SharedPixelBuffer::<Rgb8Pixel>::new(width, height);
+    let pixels = buffer.make_mut_slice();
+    
+    // Clear background (Dark theme: #141416 -> 20, 20, 22)
+    for pixel in pixels.iter_mut() {
+        *pixel = Rgb8Pixel { r: 20, g: 20, b: 22 };
+    }
+
+    // Colors
+    let col_btc = Rgb8Pixel { r: 247, g: 147, b: 26 }; // Orange
+    let col_eth = Rgb8Pixel { r: 22, g: 82, b: 240 };  // Blue
+    let col_oth = Rgb8Pixel { r: 136, g: 136, b: 136 }; // Grey
+
+    if data.is_empty() {
+        return buffer;
+    }
+
+    let min_ts = data.iter().map(|r| r.timestamp).min().unwrap_or(0);
+    let max_ts = data.iter().map(|r| r.timestamp).max().unwrap_or(1);
+    let duration = (max_ts - min_ts) as f64;
+
+    // Helper to draw a line segment
+    let draw_line = |pix: &mut [Rgb8Pixel], x0: i32, y0: i32, x1: i32, y1: i32, col: Rgb8Pixel| {
+        let dx = (x1 - x0).abs();
+        let dy = -(y1 - y0).abs();
+        let sx = if x0 < x1 { 1 } else { -1 };
+        let sy = if y0 < y1 { 1 } else { -1 };
+        let mut err = dx + dy;
+        let mut x = x0;
+        let mut y = y0;
+
+        loop {
+            if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+                pix[(y as u32 * width + x as u32) as usize] = col;
+            }
+            if x == x1 && y == y1 { break; }
+            let e2 = 2 * err;
+            if e2 >= dy { err += dy; x += sx; }
+            if e2 <= dx { err += dx; y += sy; }
+        }
+    };
+
+    // Separate data streams
+    let mut btc_pts = Vec::new();
+    let mut eth_pts = Vec::new();
+    let mut oth_pts = Vec::new();
+
+    for r in data {
+        if duration == 0.0 { continue; }
+        let x = ((r.timestamp - min_ts) as f64 / duration * (width as f64 - 1.0)) as i32;
+        let val = r.dominance.unwrap_or(0.0);
+        // Y flip: 0 is top. 100% -> 0, 0% -> height
+        let y = ((100.0 - val) / 100.0 * (height as f64 - 1.0)) as i32;
+
+        match r.name.as_str() {
+            "Bitcoin Dominance" => btc_pts.push((x, y)),
+            "Ethereum Dominance" => eth_pts.push((x, y)),
+            _ => oth_pts.push((x, y)),
+        }
+    }
+
+    // Draw lines
+    let mut draw_series = |pts: &Vec<(i32, i32)>, col: Rgb8Pixel| {
+        for i in 0..pts.len().saturating_sub(1) {
+            let (x0, y0) = pts[i];
+            let (x1, y1) = pts[i+1];
+            draw_line(pixels, x0, y0, x1, y1, col);
+        }
+    };
+
+    draw_series(&oth_pts, col_oth);
+    draw_series(&eth_pts, col_eth);
+    draw_series(&btc_pts, col_btc);
+
+    buffer
+}
+
+// Function to simulate backend API response
 fn generate_raw_dominance_api_data() -> Vec<DominanceData> {
     let mut data = Vec::new();
     let mut rng = rand::rng();
     let start_ts = 1722816000;
     
-    // Generate 50 points
-    for i in 0..50 {
-        let ts = start_ts + (i * 86400); // Daily points
+    // Generate 100 points for smoother curve
+    for i in 0..100 {
+        let ts = start_ts + (i * 43200); 
         
-        let base_btc = 55.0 + rng.random_range(-2.0..2.0) + (i as f64 * 0.1); 
-        let base_eth = 15.0 + rng.random_range(-1.0..1.0) - (i as f64 * 0.05);
+        let base_btc = 55.0 + rng.random_range(-2.0..2.0) + (i as f64 * 0.05); 
+        let base_eth = 15.0 + rng.random_range(-1.0..1.0) - (i as f64 * 0.02);
         let base_others = 100.0 - base_btc - base_eth; 
 
-        data.push(DominanceData { 
-            name: "Bitcoin Dominance".to_string(), 
-            timestamp: ts, 
-            dominance: Some(base_btc),
-        });
-        data.push(DominanceData { 
-            name: "Ethereum Dominance".to_string(), 
-            timestamp: ts, 
-            dominance: Some(base_eth),
-        });
-        data.push(DominanceData { 
-            name: "Others".to_string(), 
-            timestamp: ts, 
-            dominance: Some(base_others),
-        });
+        data.push(DominanceData { name: "Bitcoin Dominance".to_string(), timestamp: ts, dominance: Some(base_btc) });
+        data.push(DominanceData { name: "Ethereum Dominance".to_string(), timestamp: ts, dominance: Some(base_eth) });
+        data.push(DominanceData { name: "Others".to_string(), timestamp: ts, dominance: Some(base_others) });
     }
     data
 }
 
-// ... existing SVG generator for sparklines ...
+// ... existing SVG generator for sparklines (left side) ...
 fn generate_dummy_chart_svg() -> SharedString {
     let mut rng = rand::rng();
     let steps = 20;
-    let mut current_val: f64 = 0.5; 
+    let mut current_val: f64 = 0.5;
     let mut path_cmd = String::new();
     let step_x = 100.0 / ((steps - 1) as f32);
 
@@ -59,13 +128,8 @@ fn generate_dummy_chart_svg() -> SharedString {
 }
 
 fn generate_dummy_data() -> Vec<CryptoData> {
-    let symbols = vec![
-        "ACB", "BCM", "BID", "BVH", "CTG", "FPT", "GAS", "GVR", "HDB", "HPG", 
-        "MBB", "MSN", "MWG", "PLX", "POW", "SAB", "SHB", "SSB", "SSI", "STB", 
-        "TCB", "TPB", "VCB", "VHM", "VIB", "VIC", "VJC", "VNM", "VPB", "VRE"
-    ];
+    let symbols = vec!["ACB", "BCM", "BID", "BVH", "CTG", "FPT", "GAS", "GVR", "HDB", "HPG"];
     let mut rng = rand::rng();
-    
     symbols.into_iter().map(|sym| {
         CryptoData {
             symbol: sym.to_string(),
@@ -73,195 +137,220 @@ fn generate_dummy_data() -> Vec<CryptoData> {
             high: Some(rng.random_range(10.0..100.0)),
             low: Some(rng.random_range(1.0..1000.0)), 
             close: Some(rng.random_range(1.0..1000.0)),
-            // datetime: "".to_string(),
-            volume: Some(rng.random_range(1000.0..100000.0)),
-            interval: "".to_string(),
-            timestamp: 0,
-            // updated_at: "".to_string(),
+            interval: "1d".to_string(),
+            open_time: 1734480000000,
+            close_time: 1734566399999,
+            volume: Some(rng.random_range(10.0..1000.0)),
+            quote_asset_volume: Some(rng.random_range(10.0..1000.0)),
+            taker_buy_base_asset_volume: Some(rng.random_range(10.0..1000.0)),
+            taker_buy_quote_asset_volume: Some(rng.random_range(10.0..1000.0)),
+            trades: rng.random_range(10..1000),
         }
     }).collect()
+}
+
+fn generate_dummy_rsi_data() -> Vec<CryptoRsiData> {
+    let symbols = vec![
+        ("Dummy", "Bitcoin", "bitcoin"),
+        ("ETH", "Ethereum", "ethereum"),
+        ("BNB", "Binance Coin", "binance-coin"),
+        ("SOL", "Solana", "solana"),
+        ("ADA", "Cardano", "cardano"),
+    ];
+
+    let mut rng = rand::rng();
+
+    symbols
+        .into_iter()
+        .enumerate()
+        .map(|(i, (symbol, name, slug))| {
+            CryptoRsiData {
+                id: i.to_string(),
+                symbol: symbol.to_string(),
+                name: name.to_string(),
+                slug: slug.to_string(),
+
+                market_cap: Some(rng.random_range(1_000_000_000.0..1_000_000_000_000.0)),
+                price: Some(rng.random_range(1.0..100_000.0)),
+                price_24h: Some(rng.random_range(-10.0..10.0)),
+
+                current_rsi: Some(rng.random_range(10.0..90.0)),
+                last_rsi: Some(rng.random_range(10.0..90.0)),
+
+                rsi_15m: Some(rng.random_range(10.0..90.0)),
+                rsi_1h: Some(rng.random_range(10.0..90.0)),
+                rsi_4h: Some(rng.random_range(10.0..90.0)),
+                rsi_24h: Some(rng.random_range(10.0..90.0)),
+                rsi_7d: Some(rng.random_range(10.0..90.0)),
+
+                updated_at: "".to_string(),
+            }
+        })
+        .collect()
 }
 
 pub async fn spawn_crypto_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskHandle {
     let ui_handle = ui.as_weak();
     let (tx, mut rx) = tokio::sync::mpsc::channel(10);
-    let task_handle =
-        register_task("chart.quantitative.crypto".to_string(), tx, "Quantitative Crypto Data".to_string()).await;
+    let task_handle = register_task("chart.quantitative.crypto".to_string(), tx, "Quantitative Crypto Data".to_string()).await;
 
     tokio::spawn(async move {
         let mut task_status = TaskStatus::Running;
-
         loop {
-            if let Ok(status) = rx.try_recv() {
-                if task_status != status {
-                    log::info!("Crypto Data task status changed to: {:?}", status);
-                    task_status = status;
-                }
-            }
-
-            if task_status != TaskStatus::Running {
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                continue;
-            }
+            if let Ok(status) = rx.try_recv() { if task_status != status { task_status = status; } }
+            if task_status != TaskStatus::Running { tokio::time::sleep(std::time::Duration::from_millis(100)).await; continue; }
 
             let fetched_result = fetch_crypto_data().await;
-
             let final_data = match fetched_result {
-                Ok(data) => {
-                    if data.is_empty() {
-                        log::warn!("Crypto API returned empty. Using Dummy Data for Debugging.");
-                        generate_dummy_data()
-                        //vec![]
-                    } else {
-                        log::info!("Fetched {} Crypto records", data.len());
-                        generate_dummy_data()
-                    }
-                },
-                Err(e) => {
-                    log::error!("Failed to fetch Crypto data: {}. Using Dummy Data.", e);
-                    generate_dummy_data()
-                    //vec![]
-                }
+                Ok(data) => if data.is_empty() { generate_dummy_data() } else { data },
+                Err(_) => generate_dummy_data() // Using dummy on error
             };
 
             let crypto_list_data: Vec<SlintCryptoData> = final_data.iter().map(|d| {
-                let close = d.close.unwrap_or(0.0);
-                let open = d.open.unwrap_or(0.0);
-                let change_val = close - open;
-                let change_pct = if open != 0.0 { (change_val / open) * 100.0 } else { 0.0 };
-                let is_pos = change_val >= 0.0;
-
                 SlintCryptoData {
                     symbol: d.symbol.clone().into(),
-                    open: format!("{:.2}", open).into(),
-                    high: d.high.map(|v| format!("{:.2}", v)).unwrap_or_default().into(),
-                    low: d.low.map(|v| format!("{:.2}", v)).unwrap_or_default().into(),
-                    close: format!("{:.2}", close).into(),
-                    change_value: format!("{:.2}", change_val).into(),
-                    change_percentage: format!("{:.2} %", change_pct).into(),
-                    is_positive: is_pos,
-                    chart_data: generate_dummy_chart_svg(),
+                    open: format!("{:.2}", d.open.unwrap_or(0.0)).into(),
+                    high: format!("{:.2}", d.high.unwrap_or(0.0)).into(),
+                    low: format!("{:.2}", d.low.unwrap_or(0.0)).into(),
+                    close: format!("{:.2}", d.close.unwrap_or(0.0)).into(),
+                    change_value: format!("{:.2}", d.close.unwrap_or(0.0) - d.open.unwrap_or(0.0)).into(),
+                    change_percentage: format!("{:.2} %", ((d.close.unwrap_or(0.0) - d.open.unwrap_or(0.0))/d.open.unwrap_or(1.0)*100.0)).into(),
+                    is_positive: (d.close.unwrap_or(0.0) >= d.open.unwrap_or(0.0)),
+                    chart_data: generate_dummy_chart_svg(), 
                 }
             }).collect();
 
             let _ = ui_handle.upgrade_in_event_loop(move |ui| {
                 ui.set_crypto_list(ModelRc::new(VecModel::from(crypto_list_data)));
-                log::info!("Updated Crypto Data in UI");
             });
-
             tokio::time::sleep(std::time::Duration::from_secs(300)).await; 
         }
     });
-
     task_handle
 }
 
 pub async fn spawn_dominance_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskHandle {
     let ui_handle = ui.as_weak();
     let (tx, mut rx) = tokio::sync::mpsc::channel(10);
-    let task_handle =
-        register_task("chart.quantitative.dominance".to_string(), tx, "Quantitative Dominance Data".to_string()).await;
+    let task_handle = register_task("chart.quantitative.dominance".to_string(), tx, "Quantitative Dominance Data".to_string()).await;
 
     tokio::spawn(async move {
         let mut task_status = TaskStatus::Running;
-
         loop {
-            if let Ok(status) = rx.try_recv() {
-                if task_status != status {
-                    log::info!("Dominance Data task status changed to: {:?}", status);
-                    task_status = status;
-                }
-            }
-
-            if task_status != TaskStatus::Running {
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                continue;
-            }
+            if let Ok(status) = rx.try_recv() { if task_status != status { task_status = status; } }
+            if task_status != TaskStatus::Running { tokio::time::sleep(std::time::Duration::from_millis(100)).await; continue; }
 
             let fetched_result = fetch_dominance_data().await;
-
-            let final_data = match fetched_result {
-                Ok(data) => {
-                    if data.is_empty() {
-                        log::warn!("Dominance API returned empty. Use Dummy Data for Debugging.");
-                        vec![]
-                    } else {
-                        log::info!("Fetched {} Dominance records", data.len());
-                        data
-                    }
-                },
-                Err(e) => {
-                    log::error!("Failed to fetch Dominance data: {}. Use Dummy Data.", e);
-                    generate_raw_dominance_api_data()
-                }
+            let mut final_data = match fetched_result {
+                Ok(data) => if data.is_empty() { generate_raw_dominance_api_data() } else { data },
+                Err(_) => generate_raw_dominance_api_data()
             };
+            
+            // Sort by time
+            final_data.sort_by_key(|r| r.timestamp);
 
-            // INLINE PROCESSING: Convert DominanceData to Slint Chart Data
-            let mut btc_points: Vec<(f64, f64)> = Vec::new();
-            let mut eth_points: Vec<(f64, f64)> = Vec::new();
-            let mut other_points: Vec<(f64, f64)> = Vec::new();
+            // Calculate last values for end tags
+            let mut last_btc: f64 = 0.0;
+            let mut last_eth: f64 = 0.0;
+            let mut last_others: f64 = 0.0;
 
-            // Get min/max for normalization
-            let min_ts = final_data.iter().map(|r| r.timestamp).min().unwrap_or(0);
-            let max_ts = final_data.iter().map(|r| r.timestamp).max().unwrap_or(1);
-            let duration = (max_ts - min_ts) as f64;
-
+            // Iterate to find the last value for each
+            // Note: Since we sorted by timestamp, the last occurrence of each type is the latest
             for r in &final_data {
-                // Normalize X (Time) to 0..100
-                let x = if duration == 0.0 { 0.0 } else { ((r.timestamp - min_ts) as f64 / duration) * 100.0 };
-                
-                // Extract dominance from Option<f64>
-                let val = r.dominance.unwrap_or(0.0);
-                
-                // Normalize Y (Dominance 0-100%) to SVG Y (100-0)
-                let y = 100.0 - val;
-
                 match r.name.as_str() {
-                    "Bitcoin Dominance" => btc_points.push((x, y)),
-                    "Ethereum Dominance" => eth_points.push((x, y)),
-                    _ => other_points.push((x, y)),
+                    "Bitcoin Dominance" => last_btc = r.dominance.unwrap_or(0.0),
+                    "Ethereum Dominance" => last_eth = r.dominance.unwrap_or(0.0),
+                    _ => last_others = r.dominance.unwrap_or(0.0),
                 }
             }
 
-            // Helper closure to build path string "M x y L x y..."
-            let build_path = |points: &Vec<(f64, f64)>| -> SharedString {
-                let mut path = String::new();
-                for (i, (x, y)) in points.iter().enumerate() {
-                    if i == 0 {
-                        path.push_str(&format!("M {:.1} {:.1} ", x, y));
-                    } else {
-                        path.push_str(&format!("L {:.1} {:.1} ", x, y));
-                    }
-                }
-                path.into()
-            };
+            // Generate BUFFER (not Image) in the thread
+            let chart_buffer = generate_chart_buffer(&final_data, 800, 400);
 
-            // Helper to get last value string
-            let get_last_val = |points: &Vec<(f64, f64)>| -> SharedString {
-                if let Some((_, y)) = points.last() {
-                    format!("{:.2}%", 100.0 - y).into()
-                } else {
-                    "0.00%".into()
-                }
-            };
-
-            let dominace_chart_data = SlintDominanceChartData {
-                btc_path: build_path(&btc_points),
-                eth_path: build_path(&eth_points),
-                others_path: build_path(&other_points),
-                btc_value: get_last_val(&btc_points),
-                eth_value: get_last_val(&eth_points),
-                others_value: get_last_val(&other_points),
-            };
+            // Capture values to move into closure
+            let btc_val = format!("{:.2}%", last_btc);
+            let eth_val = format!("{:.2}%", last_eth);
+            let others_val = format!("{:.2}%", last_others);
+            
+            // Y position calculation (0 to 100, where 0 is top/100%, 100 is bottom/0%)
+            // So if dominance is 60%, y should be 40.
+            let btc_y = (100.0 - last_btc) as f32;
+            let eth_y = (100.0 - last_eth) as f32;
+            let others_y = (100.0 - last_others) as f32;
 
             let _ = ui_handle.upgrade_in_event_loop(move |ui| {
+                // Convert buffer to Image INSIDE the UI thread closure
+                let chart_img = Image::from_rgb8(chart_buffer);
+                
+                let dominace_chart_data = SlintDominanceChartData {
+                    chart_image: chart_img,
+                    btc_value: btc_val.into(),
+                    eth_value: eth_val.into(),
+                    others_value: others_val.into(),
+                    btc_y: btc_y,
+                    eth_y: eth_y,
+                    others_y: others_y,
+                };
+                
                 ui.set_dominance_data(dominace_chart_data);
-                log::info!("Updated Dominance Data in UI");
+                log::info!("Updated Dominance Data Image & Tags in UI");
             });
 
             tokio::time::sleep(std::time::Duration::from_secs(300)).await; 
         }
     });
+    task_handle
+}
 
+pub async fn spawn_crypto_rsi_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskHandle {
+    let ui_handle = ui.as_weak();
+    let (tx, mut rx) = tokio::sync::mpsc::channel(10);
+    let task_handle = register_task("chart.quantitative.crypto_rsi".to_string(), tx, "Quantitative Crypto RSI Data".to_string()).await;
+
+    tokio::spawn(async move {
+        let mut task_status = TaskStatus::Running;
+        loop {
+            if let Ok(status) = rx.try_recv() { if task_status != status { task_status = status; } }
+            if task_status != TaskStatus::Running { tokio::time::sleep(std::time::Duration::from_millis(100)).await; continue; }
+
+            let fetched_result = fetch_crypto_rsi_data().await;
+            let final_data = match fetched_result {
+                Ok(data) => if data.is_empty() { vec![] } else { data },
+                Err(_) => generate_dummy_rsi_data() // Using dummy on error
+            };
+
+            let crypto_list_data: Vec<SlintCoinData> = final_data.iter().map(|d| {
+                let rsi = d.current_rsi.unwrap_or(50.0) as f32;
+                let y_pos = 1.0 - (rsi / 100.0);
+                let market_cap = d.market_cap.unwrap_or(0.0);
+
+                let safe_market_cap = if market_cap < 1.0 { 1.0 } else {market_cap};
+                let cap_log = safe_market_cap.log10() as f32;
+                
+                // ADJUSTED SCALING for realistic Crypto Market Caps ($10M to $10T)
+                // Min Cap ~ $10,000,000 (Log10 = 7.0)
+                // Max Cap ~ $10,000,000,000,000 (Log10 = 13.0)
+                let min_log = 7.0;
+                let max_log = 13.0;
+                
+                let normalized_cap = (cap_log - min_log) / (max_log - min_log);
+                
+                // X axis: 1.0 (Right) is small cap (normalized 0), 0.0 (Left) is big cap (normalized 1)
+                let x_pos: f32 = 1.0 - normalized_cap;
+                
+                SlintCoinData {
+                    rsi: rsi,
+                    symbol: d.symbol.clone().into(),
+                    x: x_pos.max(0.02).min(0.98),
+                    y: y_pos.max(0.05).min(0.95),
+                }
+            }).collect();
+
+            let _ = ui_handle.upgrade_in_event_loop(move |ui| {
+                ui.set_crypto_coin_list(ModelRc::new(VecModel::from(crypto_list_data)));
+            });
+            tokio::time::sleep(std::time::Duration::from_secs(300)).await; 
+        }
+    });
     task_handle
 }

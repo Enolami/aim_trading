@@ -1045,12 +1045,36 @@ pub struct RsiData {
 pub struct CryptoData {
     pub symbol: String,
     pub interval: String,
-    pub timestamp: i64,
+    pub open_time: i64,
     pub open: Option<f64>,
     pub high: Option<f64>,
     pub low: Option<f64>,
     pub close: Option<f64>,
     pub volume: Option<f64>,
+    pub close_time: i64,
+    pub quote_asset_volume: Option<f64>,
+    pub trades: i64,
+    pub taker_buy_base_asset_volume: Option<f64>,
+    pub taker_buy_quote_asset_volume: Option<f64>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CryptoRsiData {
+    pub id: String,
+    pub symbol: String,
+    pub name: String,
+    pub slug: String,
+    pub market_cap: Option<f64>,
+    pub current_rsi: Option<f64>,
+    pub last_rsi: Option<f64>,
+    pub price: Option<f64>,
+    pub price_24h: Option<f64>,
+    pub rsi_15m: Option<f64>,
+    pub rsi_1h: Option<f64>,
+    pub rsi_4h: Option<f64>,
+    pub rsi_24h: Option<f64>,
+    pub rsi_7d: Option<f64>,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
