@@ -3,7 +3,7 @@ use crate::explorer::aim::{
     InstitutionData, Officer, PropTradingData, SharedHolder, SjcPriceData, StockByGics, Subsidiary,
     TopStockInfluencer, fetch_api_data, fetch_api_finance_report_pdf, fetch_market_cap_api_data,
     StockReport, StrategyReport, PdfReport, ApiReport, CorrelationMatrixAPI, ReturnMatrixAPI, RsiData, Top10MarketCap,
-    CryptoData, DominanceData, CryptoRsiData,
+    CryptoData, DominanceData, CryptoRsiData, EtfFlowData, CryptoMarketCapData
 };
 
 pub async fn fetch_balance_sheet_data(
@@ -170,5 +170,15 @@ pub async fn fetch_dominance_data() -> Result<Vec<DominanceData>, reqwest::Error
 
 pub async fn fetch_crypto_rsi_data() -> Result<Vec<CryptoRsiData>, reqwest::Error> {
     let endpoint = "crypto-rsi-heatmap";
+    fetch_api_data(&endpoint).await
+}
+
+pub async fn fetch_etf_flow_data() -> Result<Vec<EtfFlowData>, reqwest::Error> {
+    let endpoint = "crypto-etf-netflow-chart?days_back=1000";
+    fetch_api_data(&endpoint).await
+}
+
+pub async fn fetch_crypto_market_cap_data() -> Result<Vec<CryptoMarketCapData>, reqwest::Error> {
+    let endpoint = "crypto-market-cap-chart?days_back=50";
     fetch_api_data(&endpoint).await
 }

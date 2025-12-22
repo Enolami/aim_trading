@@ -1,5 +1,5 @@
 import { QuantitativeLayout } from "../quantitative/quantitative_layout.slint";
-import { CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, CryptoData, DominanceChartData } from "../../data_type.slint";
+import { CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, CryptoData, DominanceChartData, EtfFlowData, CryptoMarketCapData } from "../../data_type.slint";
 import { SectorRangeSnapshot } from "../quantitative/quantitative_price_trade_heatmap.slint";
 
 export component QuantitativeAnalysis inherits Rectangle {
@@ -14,6 +14,8 @@ export component QuantitativeAnalysis inherits Rectangle {
     in property <float> rsi_oversold_pct: 0.0;
     in property <DominanceChartData> dominance_data;
     in property <[CoinData]> crypto_coin_list; 
+    in property <EtfFlowData> etf_flow_data;
+    in property <CryptoMarketCapData> market_cap_data;
     in-out property <[SectorRangeSnapshot]> sector_ranges;
 
     callback on_add_tag(string);
@@ -53,5 +55,7 @@ export component QuantitativeAnalysis inherits Rectangle {
         crypto_list: root.crypto_list;
         dominance_data: root.dominance_data;
         crypto_coin_list: root.crypto_coin_list;
+        etf_flow_data: root.etf_flow_data;
+        market_cap_data: root.market_cap_data;
         sector_ranges <=> root.sector_ranges;
     }} 

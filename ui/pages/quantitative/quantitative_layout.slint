@@ -10,7 +10,7 @@ import { MP } from "MP.slint";
 import { Crypto } from "crypto.slint";
 // MP layout
 import { RsiData, CoinData, MaData } from "../../data_type.slint";
-import { CryptoData, DominanceChartData } from "../../data_type.slint";
+import { CryptoData, DominanceChartData, EtfFlowData, CryptoMarketCapData } from "../../data_type.slint";
 import { QuantitativePriceTradeHeatmap, SectorRangeSnapshot } from "quantitative_price_trade_heatmap.slint";
 export component AimDatePicker inherits Rectangle {
     in-out property <string> selected_date: "";
@@ -585,6 +585,8 @@ export component QuantitativeLayout inherits Rectangle {
     in property <[CryptoData]> crypto_list; 
     in property <DominanceChartData> dominance_data; 
     in property <[CoinData]> crypto_coin_list;
+    in property <EtfFlowData> etf_flow_data;
+    in property <CryptoMarketCapData> market_cap_data;
 
     callback sort_rsi14();
 
@@ -682,6 +684,8 @@ export component QuantitativeLayout inherits Rectangle {
                     crypto_list: root.crypto_list;
                     dominance_data: root.dominance_data;
                     crypto_coin_list: root.crypto_coin_list;
+                    etf_flow_data: root.etf_flow_data;
+                    market_cap_data: root.market_cap_data;
                 }
             }
         }

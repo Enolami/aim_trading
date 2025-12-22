@@ -4,7 +4,7 @@ import { ListComboBox } from "../sentiment/sentiment_component.slint";
 // -------------------------------------------------------------------------
 // 2. GLOBAL STYLES
 // -------------------------------------------------------------------------
-export global Palette {
+global Palette {
     out property <color> bg-color: #111111;
     out property <color> card-bg: #1A1A1A;
     out property <color> sidebar-bg: #1E1E1E;
@@ -14,10 +14,11 @@ export global Palette {
     out property <color> text-muted: #666666;
 
     // Chart Zones
-    out property <color> zone-overbought: #381E22;
-    out property <color> zone-strong: #2A2126;     
-    out property <color> zone-neutral: #1F232C;   
-    out property <color> zone-oversold: #182B28;
+    out property <color> zone-overbought: #371b24;
+    out property <color> zone-strong: #291d26;     
+    out property <color> zone-neutral: #1b1e27;  
+    out property <color> zone-weak: #1a2b2e; 
+    out property <color> zone-oversold: #1a3834;
     // Accents
     out property <color> accent-blue: #4F46E5;
     out property <color> accent-cyan: #06B6D4;
@@ -287,30 +288,50 @@ export component RsiHeatmapChart inherits Rectangle {
                 VerticalLayout {
                     width: 100%;
                     height: 100%;
-                    Rectangle { background: Palette.zone-overbought; vertical-stretch: 25; }
-                    Rectangle { background: Palette.zone-strong;
-                    vertical-stretch: 25; }
-                    Rectangle { background: Palette.zone-neutral;
-                    vertical-stretch: 20; }
-                    Rectangle { background: Palette.zone-oversold;
-                    vertical-stretch: 30; }
+                    Rectangle { background: Palette.zone-overbought; vertical-stretch: 30; }
+                    Rectangle { background: Palette.zone-strong; vertical-stretch: 10; }
+                    Rectangle { background: Palette.zone-neutral; vertical-stretch: 20; }
+                    Rectangle { background: Palette.zone-weak; vertical-stretch: 10; }
+                    Rectangle { background: Palette.zone-oversold; vertical-stretch: 30; }
                 }
 
-                Rectangle { height: 1px;
-                background: #ffffff10; y: parent.height * 0.25; }
-                Rectangle { height: 1px;
-                background: #ffffff10; y: parent.height * 0.50; }
-                Rectangle { height: 1px;
-                background: #ffffff10; y: parent.height * 0.70; }
+                //horizontal
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.1; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.2; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.3; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.4; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.5; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.6; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.7; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.8; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height * 0.9; }
+                // Rectangle { height: 1px; background: #ffffff10; y: parent.height; }                
 
-                Rectangle { width: 1px;
-                background: #ffffff05; x: parent.width * 0.15; }
-                Rectangle { width: 1px;
-                background: #ffffff05; x: parent.width * 0.35; }
-                Rectangle { width: 1px;
-                background: #ffffff05; x: parent.width * 0.60; }
-                Rectangle { width: 1px;
-                background: #ffffff05; x: parent.width * 0.85; }
+                for i in 10 : Rectangle {
+                    height: 1px;
+                    background: #ffffff10;
+                    y: parent.height * (i / 10);
+                }
+                //vertical
+                // Rectangle { width: 1px; background: #ffffff05; x: parent.width * 0.167; }
+                // Rectangle { width: 1px; background: #ffffff05; x: parent.width * 0.334; }
+                // Rectangle { width: 1px; background: #ffffff05; x: parent.width * 0.5; }
+                // Rectangle { width: 1px; background: #ffffff05; x: parent.width * 0.668; }
+                // Rectangle { width: 1px; background: #ffffff05; x: parent.width * 0.835; }
+
+                for i in 6 : Rectangle {
+                    width: 1.5px;
+                    background: #ffffff05;
+                    x: parent.width * (i / 6);
+                }
+
+                Rectangle {
+                    Text {text: "Overbought"; color: Palette.text-muted;font-weight: 600; x: parent.width - 68px; y: parent.height * 0.135;}
+                    Text {text: "Strong"; color: Palette.text-muted;font-weight: 600; x: parent.width - 40px; y: parent.height * 0.335;}
+                    Text {text: "Neutral"; color: Palette.text-muted;font-weight: 600; x: parent.width - 43px; y: parent.height * 0.4875;}
+                    Text {text: "Weak"; color: Palette.text-muted;font-weight: 600; x: parent.width - 33px; y: parent.height * 0.65;}
+                    Text {text: "Oversold"; color: Palette.text-muted;font-weight: 600; x: parent.width - 53px; y: parent.height * 0.835;}
+                }
 
                 for coin in root.coins : CryptoDot {
                     symbol: coin.symbol;
@@ -320,36 +341,39 @@ export component RsiHeatmapChart inherits Rectangle {
                 }
 
                 Rectangle {
-                    y: parent.height - 15px;
+                    y: parent.height;
                     height: 15px;
                     width: parent.width;
-                    Text { text: "$4T";   color: Palette.text-muted; font-size: 9px; x: 0;
-                    }
-                    Text { text: "$1T";
-                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.15; }
-                    Text { text: "$100B";
-                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.35; }
-                    Text { text: "$10B";
-                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.60; }
-                    Text { text: "$100M";
-                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.85; }
+                    Text { text: "$10T"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: 0;}
+                    Text { text: "$1T"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: parent.width * 0.162; }
+                    Text { text: "$100B"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: parent.width * 0.325; }
+                    Text { text: "$10B"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: parent.width * 0.495; }
+                    Text { text: "$1B"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: parent.width * 0.664; }
+                    Text { text: "$100M"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: parent.width * 0.825; }
+                    Text { text: "$10M"; color: Palette.text-muted; font-size: 9px; font-weight: 600; x: parent.width * 0.99; }                    
                 }
             }
 
             VerticalLayout {
                 alignment: space-between;
                 width: 20px;
-                Text { text: "100"; font-size: 9px; color: Palette.text-muted;
-                }
-                Text { text: "75";
-                font-size: 9px; color: Palette.text-muted; }
-                Text { text: "50";
-                font-size: 9px; color: Palette.text-muted; }
-                Text { text: "30";
-                font-size: 9px; color: Palette.text-muted; }
-                Text { text: "0";
-                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "100"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "90"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "80"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "70"; font-size: 9px; color: Palette.text-muted; }
+                Text { text: "60"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "50"; font-size: 9px; color: Palette.text-muted; }
+                Text { text: "40"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "30"; font-size: 9px; color: Palette.text-muted; }
+                Text { text: "20"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "10"; font-size: 9px; color: Palette.text-muted;}
+                Text { text: "0"; font-size: 9px; color: Palette.text-muted; }
             }
+        }
+
+        Rectangle {
+            x: parent.width * 0.5;
+            Text {text: "Market Cap (USD)"; font-weight: 600; color: Palette.text-muted;}
         }
     }
 }

@@ -256,3 +256,28 @@ export struct DominanceChartData {
     eth_y: float,
     others_y: float,
 }
+
+export struct EtfFlowData {
+    header_value: string,    
+    header_subtext: string, 
+    is_positive: bool, 
+    chart_image: image,      
+    y_max: string,           
+    y_min: string,           
+    x_labels: [string],      
+}
+
+export struct CryptoMarketCapData {
+    chart_image: image,
+    total_cap: string,
+    btc_value: string,
+    btc_change: string,
+    eth_value: string,
+    eth_change: string,
+    stable_value: string,
+    stable_change: string,
+    others_value: string,
+    others_change: string,
+    y_labels: [string],
+    x_labels: [string],
+}

@@ -15,7 +15,9 @@ export global Palette {
     out property <color> accent-blue: #4F46E5;
     out property <color> accent-cyan: #06B6D4;
     out property <color> accent-green: #10B981;
+    out property <color> accent-darkgreen: #1E8449;
     out property <color> accent-red: #EF4444;
+    out property <color> accent-darkred: #922B21;
     out property <color> accent-grey: #B0B3B8;
     out property <color> crypto-red-1: #381E22; 
     out property <color> crypto-red-2: #451818; 
@@ -30,9 +32,9 @@ export global Palette {
     out property <color> btc-orange: #F7931A;
     out property <color> eth-blue: #1652F0;
     out property <color> others-grey: #888888;
+    out property <color> stable-green: #1E8449; // Added for Market Cap Chart
     out property <color> chart-bg: #141416;
 }
-
 export struct CryptoData {
     symbol: string,
     open: string,
@@ -55,6 +57,31 @@ export struct DominanceChartData {
     btc_y: float,
     eth_y: float,
     others_y: float,
+}
+
+export struct EtfFlowData {
+    header_value: string,    
+    header_subtext: string, 
+    is_positive: bool, 
+    chart_image: image,      
+    y_max: string,           
+    y_min: string,           
+    x_labels: [string],      
+}
+
+export struct CryptoMarketCapData {
+    chart_image: image,
+    total_cap: string,
+    btc_value: string,
+    btc_change: string,
+    eth_value: string,
+    eth_change: string,
+    stable_value: string,
+    stable_change: string,
+    others_value: string,
+    others_change: string,
+    y_labels: [string],
+    x_labels: [string],
 }
 
 // --- NEW COMPONENT: Simple Tab Bar ---
@@ -112,14 +139,14 @@ export component HorizontalTabBar {
 export component TickerTile inherits Rectangle { 
     in property <string> ticker-symbol: "BTC/USDT"; 
     in property <string> price: "0.00"; 
-    in property <string> change-percentage: "+0.00%"; 
+    in property <string> change-percentage: "0.00"; 
     in property <string> change-value: "+0.00"; 
     in property <string> high-price: "H 0.00"; 
     in property <string> low-price: "L 0.00"; 
     in property <bool> is-positive: true; 
     // Input for chart Image
     in property <image> chart-data; 
-    in property <brush> custom-bg: is-positive ? Palette.zone-oversold : Palette.zone-overbought; 
+    in property <brush> custom-bg: is-positive ? (change-percentage.to-float()>10 ? Palette.accent-cyan : Palette.accent-darkgreen) : (change-percentage.to-float()>-10 ? Palette.accent-red : Palette.accent-darkred); 
     horizontal-stretch: 1; 
     background: root.custom-bg; 
     border-radius: 6px; 
@@ -154,7 +181,7 @@ export component TickerTile inherits Rectangle {
                 font-size: 11px; 
             } 
             Text { 
-                text: root.change-percentage; 
+                text: root.change-percentage + "%"; 
                 color: root.is-positive ? Palette.accent-green : Palette.accent-red; 
                 font-size: 10px; 
                 font-weight: 600; 
@@ -361,10 +388,281 @@ component BitcoinDominanceChart inherits Rectangle {
     }
 }
 
+component CryptoEtfFlowChart inherits Rectangle {
+    in property <EtfFlowData> data;
+    
+    background: Palette.card-bg;
+    border-radius: 12px;
+    padding: 20px;
+
+    VerticalLayout {
+        spacing: 20px;
+        // Header
+        HorizontalLayout {
+            alignment: space-between;
+            VerticalLayout {
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Crypto ETFs Net Flow"; color: Palette.text-primary; font-weight: 700; font-size: 16px; }
+                }
+                 
+                 HorizontalLayout {
+                     spacing: 8px;
+                     alignment: start;
+                     Text {
+                         text: root.data.header_value;
+                         color: root.data.is-positive ? Palette.accent-green : Palette.accent-red;
+                         font-size: 28px; font-weight: 700;
+                     }
+                     Text {
+                         text: root.data.header_subtext;
+                         color: Palette.text-muted;
+                         font-size: 12px; vertical-alignment: center;
+                         padding-bottom: 4px;
+                     }
+                 }
+            }
+            HorizontalLayout {
+                 alignment: end;
+                 spacing: 8px;
+                 Rectangle {
+                    background: #222;
+                    border-radius: 6px;
+                    HorizontalLayout {
+                        padding: 2px;
+                        spacing: 2px;
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "30d"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: #333; Text { text: "1y"; color: white; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }} 
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "All"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                    }
+                }
+                Rectangle {
+                    height: 28px;
+                    background: transparent;
+                    Text { text: "See More"; color: Palette.text-secondary; font-size: 12px; font-weight: 600; vertical-alignment: center; }
+                }
+            }
+        }
+
+        // Chart Area: Frontend frame with Backend Image
+        HorizontalLayout {
+             spacing: 10px;
+             
+             // Left: Chart Image + X-Axis Labels
+             VerticalLayout {
+                 // Main Chart Image (Bars)
+                 Rectangle {
+                     vertical-stretch: 1;
+                     clip: true;
+                     Image {
+                        width: 100%;
+                        height: 100%;
+                        source: root.data.chart_image;
+                        image-fit: fill; // or contain, depending on preference
+                     }
+                 }
+                 
+                 // X-Axis Labels (Frontend text)
+                 HorizontalLayout {
+                     height: 20px;
+                     alignment: space-between;
+                     padding-left: 10px;
+                     padding-right: 10px;
+                     for label in root.data.x_labels : Text {
+                         text: label;
+                         color: Palette.text-muted;
+                         font-size: 10px;
+                         vertical-alignment: center;
+                     }
+                 }
+             }
+             
+             // Right: Y-Axis Labels
+             VerticalLayout {
+                 width: 40px;
+                 alignment: space-between;
+                 padding-bottom: 20px; // align with chart bottom
+                 Text { text: root.data.y_max; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                 Text { text: "0"; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+                 Text { text: root.data.y_min; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
+             }
+        }
+    }
+}
+
+export component CryptoMarketCapChart inherits Rectangle {
+    in property <CryptoMarketCapData> data;
+
+    background: Palette.card-bg;
+    border-radius: 12px;
+    padding: 20px;
+
+    VerticalLayout {
+        spacing: 15px;
+        // 1. Header and Controls
+        HorizontalLayout {
+            alignment: space-between;
+            height: 40px;
+
+            Text {
+                text: "Crypto Market Cap Chart";
+                color: white;
+                font-size: 18px;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+                alignment: end;
+
+                // Overview/Breakdown Toggle
+                Rectangle {
+                    background: #222;
+                    border-radius: 6px;
+                    width: 150px;
+                    HorizontalLayout {
+                        padding: 2px;
+                        spacing: 2px;
+                        Rectangle {
+                            width: 73px; height: 28px; border-radius: 4px; background: transparent;
+                            Text { text: "Overview"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 73px; height: 28px; border-radius: 4px; background: #333; // Active
+                            Text { text: "Breakdown"; color: white; font-size: 11px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                }
+
+                // Timeframe Toggle
+                Rectangle {
+                    background: #222;
+                    border-radius: 6px;
+                    HorizontalLayout {
+                        padding: 2px;
+                        spacing: 2px;
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "24h"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "7d"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "30d"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "1y"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: #333; // Active
+                            Text { text: "All"; color: white; font-size: 11px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Legend and Stats
+        HorizontalLayout {
+            alignment: end;
+            spacing: 20px;
+            HorizontalLayout {
+                spacing: 15px;
+                // BTC
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.btc-orange; y: 6px; }
+                        Text { text: "BTC"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    Text { text: root.data.btc_value; color: white; font-size: 14px; font-weight: 700; }
+                    Text { text: root.data.btc_change; color: Palette.accent-green; font-size: 12px; }
+                }
+                // ETH
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.eth-blue; y: 6px; }
+                        Text { text: "ETH"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    Text { text: root.data.eth_value; color: white; font-size: 14px; font-weight: 700; }
+                    Text { text: root.data.eth_change; color: Palette.accent-green; font-size: 12px; }
+                }
+                // Stablecoin
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.stable-green; y: 6px; }
+                        Text { text: "Stablecoin"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    Text { text: root.data.stable_value; color: white; font-size: 14px; font-weight: 700; }
+                    Text { text: root.data.stable_change; color: Palette.accent-green; font-size: 12px; }
+                }
+                // Others
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.others-grey; y: 6px; }
+                        Text { text: "Others"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    Text { text: root.data.others_value; color: white; font-size: 14px; font-weight: 700; }
+                    Text { text: root.data.others_change; color: Palette.accent-green; font-size: 12px; }
+                }
+            }
+        }
+
+        // 3. Chart Plot Area
+        HorizontalLayout {
+            chartArea:=Rectangle {
+                vertical-stretch: 1;
+                width: 95%;
+                background: Palette.chart-bg;
+                border-radius: 4px;
+                clip: true;
+
+                // --- IMAGE DISPLAY FROM BACKEND ---
+                Image {
+                    width: 100%;
+                    height: 100%;
+                    source: root.data.chart_image;
+                    image-fit: fill;
+                }
+            }
+
+            // Y-Axis Labels
+            VerticalLayout {
+                width: 5%;
+                // Using vertical alignment to space labels (Top to Bottom: 100% -> 0%)
+                VerticalLayout {
+                    alignment: space-between;
+                    padding-bottom: 2px; // Fine tune alignment
+                    for label in root.data.y_labels : Text {
+                        text: label;
+                        color: Palette.text-muted;
+                        font-size: 10px;
+                        horizontal-alignment: right;
+                    }
+                }
+            }
+        }
+
+        // 4. X-Axis Labels
+        HorizontalLayout {
+            alignment: space-between;
+            height: 15px;
+            padding-right: 50px;
+            for label in root.data.x_labels : Text {
+                text: label;
+                color: Palette.text-muted;
+                font-size: 10px;
+            }
+        }
+    }
+}
+
 export component Crypto inherits Rectangle {
     in property <[CryptoData]> crypto_list;
     in property <DominanceChartData> dominance_data;
     in property <[CoinData]> crypto_coin_list;
+    in property <EtfFlowData> etf_flow_data;
+    in property <CryptoMarketCapData> market_cap_data;
     // Track selected tab for the right section
     property <int> selected_right_tab: 0;
 
@@ -476,19 +774,15 @@ export component Crypto inherits Rectangle {
                         height: 100%;
                         coins: root.crypto_coin_list;
                     }
-                    if root.selected_right_tab == 2 : Text {
-                        text: "Content for Tab 3";
-                        color: Palette.text-muted;
-                        font-size: 18px;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
+                    if root.selected_right_tab == 2 : CryptoEtfFlowChart {
+                        width: 100%;
+                        height: 100%;
+                        data: root.etf_flow_data;
                     }
-                    if root.selected_right_tab == 3 : Text {
-                        text: "Content for Tab 4";
-                        color: Palette.text-muted;
-                        font-size: 18px;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
+                    if root.selected_right_tab == 3 : CryptoMarketCapChart {
+                        width: 100%;
+                        height: 100%;
+                        data: root.market_cap_data;
                     }
                 }
             }

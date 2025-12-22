@@ -1084,6 +1084,25 @@ pub struct DominanceData {
     pub dominance: Option<f64>,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct EtfFlowData {
+    pub timestamp: i64,
+    pub value: Option<f64>,
+    pub btc_value: Option<f64>,
+    pub eth_value: Option<f64>
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CryptoMarketCapData {
+    pub timestamp: i64,
+    pub market_cap: Option<f64>,
+    pub volume: Option<f64>,
+    pub btc_value: Option<f64>,
+    pub eth_value: Option<f64>,
+    pub stable_value: Option<f64>,
+    pub other_value: Option<f64>,
+}
+
 pub async fn fetch_api_finance_report_pdf(symbol: &str) -> Result<PdfReport, reqwest::Error> {
 
     let cache_dir = "cache";

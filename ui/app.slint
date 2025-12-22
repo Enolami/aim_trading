@@ -14,7 +14,7 @@ import { ChartIcon } from "widgets/func_icon.slint";
 import { StockCard, AddStockWindow } from "pages/chart/stock_card.slint";
 import { MarketWatch } from "pages/market_watch/market_watch.slint";
 import { ICBRow, IndexData, ShortType, OrderList, StockData, StockGroup, MarketWatchData,
-         AbnormalTradeData, InfluenceData, IndexRow, HeatMapData, VolumeData, GoodsData, StockReport, StrategyReport, CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, CryptoData, DominanceChartData } from "data_type.slint";
+         AbnormalTradeData, InfluenceData, IndexRow, HeatMapData, VolumeData, GoodsData, StockReport, StrategyReport, CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, CryptoData, DominanceChartData, EtfFlowData, CryptoMarketCapData } from "data_type.slint";
 import { ChartPage } from "pages/chart/chart_page.slint";
 import { selectPage } from "page_selection.slint";
 import { FinanceList } from "pages/chart/finance_type.slint";
@@ -95,6 +95,8 @@ export component AppWindow inherits Window {
     in property <float> rsi_oversold_pct: 0.0;
     in property <DominanceChartData> dominance_data;
     in property <[CoinData]> crypto_coin_list; 
+    in property <EtfFlowData> etf_flow_data;
+    in property <CryptoMarketCapData> market_cap_data;
     // Dữ liệu phân bổ vốn hóa theo ngành (Streamgraph)
     in-out property <[SectorRangeSnapshot]> quantitative_sector_ranges: [];
 
@@ -358,6 +360,8 @@ export component AppWindow inherits Window {
                 rsi_oversold_pct: root.rsi_oversold_pct;
                 dominance_data: root.dominance_data;
                 crypto_coin_list: root.crypto_coin_list;
+                etf_flow_data: root.etf_flow_data;
+                market_cap_data: root.market_cap_data;
                 sort_rsi14 => {root.sort_rsi14();}
 
                 report_selected(report_id) => {

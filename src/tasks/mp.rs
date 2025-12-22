@@ -121,7 +121,7 @@ pub async fn spawn_rsi_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskH
 
             // Common Logic for Market Cap (X-Axis)
             // Range: Min 10B -> Max 1,000,000B
-            let max_log = 6.0; 
+            let max_log = 7.0; 
             let min_log = 1.0; 
 
             // 3. RSI Heatmap (Top Right Chart)
