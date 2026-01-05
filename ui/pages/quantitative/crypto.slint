@@ -32,7 +32,7 @@ export global Palette {
     out property <color> btc-orange: #F7931A;
     out property <color> eth-blue: #1652F0;
     out property <color> others-grey: #888888;
-    out property <color> stable-green: #1E8449; // Added for Market Cap Chart
+    out property <color> stable-green: #1E8449; 
     out property <color> chart-bg: #141416;
 }
 export struct CryptoData {
@@ -44,13 +44,11 @@ export struct CryptoData {
     change_percentage: string,
     change_value: string,
     is_positive: bool,
-    chart_data: image, // Changed from string to image
+    chart_data: image, 
 }
 
-// Updated Struct to hold the generated image AND values/positions
 export struct DominanceChartData {
     chart_image: image,
-    // Values and Positions
     btc_value: string,
     eth_value: string,
     others_value: string,
@@ -84,7 +82,7 @@ export struct CryptoMarketCapData {
     x_labels: [string],
 }
 
-// --- NEW COMPONENT: Simple Tab Bar ---
+// --- TAB BAR ---
 export component HorizontalTabBar {
     in property <[string]> tabs: ["Asset Correlation", "Price - Trade Heatmap", "Return Matrix", "Technical Indicator", "Basic Statistical", "Technical Indicator Statistics", "Crypto Analysis"];
     in-out property <int> selected: 0;
@@ -99,7 +97,6 @@ export component HorizontalTabBar {
         width: parent.width;
         height: parent.height;
         background: Palette.card-bg;
-        //background: bg-tab;
         HorizontalLayout {
             spacing: 8px;
             alignment: start;
@@ -144,7 +141,6 @@ export component TickerTile inherits Rectangle {
     in property <string> high-price: "H 0.00"; 
     in property <string> low-price: "L 0.00"; 
     in property <bool> is-positive: true; 
-    // Input for chart Image
     in property <image> chart-data; 
     in property <brush> custom-bg: is-positive ? (change-percentage.to-float()>10 ? Palette.accent-cyan : Palette.accent-darkgreen) : (change-percentage.to-float()>-10 ? Palette.accent-red : Palette.accent-darkred); 
     horizontal-stretch: 1; 
@@ -152,14 +148,12 @@ export component TickerTile inherits Rectangle {
     border-radius: 6px; 
     height: 90px; 
     
-    // --- CHART AREA (Layer 1: Background) --- 
     Rectangle { 
         width: 100%; 
         height: 100%; 
         background: transparent;
         clip: true;
         
-        // Replaced Path with Image
         Image { 
             width: 100%; 
             height: 100%; 
@@ -168,7 +162,6 @@ export component TickerTile inherits Rectangle {
         } 
     } 
     
-    // --- CONTENT AREA (Layer 2: Foreground) --- 
     VerticalLayout { 
         padding: 8px; 
         spacing: 4px; 
@@ -226,7 +219,6 @@ export component TickerTile inherits Rectangle {
 component BitcoinDominanceChart inherits Rectangle {
     in property <DominanceChartData> chart-data;
 
-    // Root background is now card-bg, so the header/footer blend with the card
     background: Palette.card-bg; 
     border-radius: 12px;
     padding: 20px;
@@ -234,12 +226,12 @@ component BitcoinDominanceChart inherits Rectangle {
     VerticalLayout {
         spacing: 15px;
 
-        // 1. Header Row (Outside the chart plot area)
+        // 1. Header
         HorizontalLayout {
             alignment: space-between;
-            height: 40px; // Fixed height for header
+            height: 40px; 
 
-            // Left: Title and Legend
+            // Left
             VerticalLayout {
                 spacing: 4px;
                 Text {
@@ -316,7 +308,7 @@ component BitcoinDominanceChart inherits Rectangle {
             }
         }
 
-        // 2. Chart Plot Area (The "Red Box" Area)
+        // 2. Chart Plot Area
         HorizontalLayout {
             chartArea:=Rectangle {
                 vertical-stretch: 1;
@@ -325,7 +317,6 @@ component BitcoinDominanceChart inherits Rectangle {
                 border-radius: 4px;
                 clip: true; 
 
-                // --- IMAGE DISPLAY ---
                 Image {
                     width: 100%;
                     height: 100%;
@@ -336,7 +327,7 @@ component BitcoinDominanceChart inherits Rectangle {
 
             VerticalLayout {
                 width: 5%;
-                // Y-Axis Labels (Right Side - Percentage)
+                // Y-Axis Labels
                 Rectangle {
                     width: 100%; height: 100%;
                     Text { text: "100.00%"; y: 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
@@ -345,8 +336,7 @@ component BitcoinDominanceChart inherits Rectangle {
                     Text { text: "25.00%"; y: chartArea.height * 0.75 - 5px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
                     Text { text: "0.00%"; y: chartArea.height - 15px; color: Palette.text-muted; font-size: 10px; horizontal-alignment: right; }
                 
-                    // --- END TAGS (Value Indicators) ---
-                    // Dynamically positioned based on data from backend
+                    // --- END TAGS ---
                     Rectangle {                        
                         y: (chartArea.height * (root.chart-data.btc_y / 100)) - 10px;
                         width: 50px; height: 20px;
@@ -371,7 +361,7 @@ component BitcoinDominanceChart inherits Rectangle {
                 }
             }
         }
-        // 3. X-Axis Labels (Footer Row)
+        // 3. X-Axis Labels
         HorizontalLayout {
             alignment: space-between;
             height: 15px;
@@ -423,35 +413,55 @@ component CryptoEtfFlowChart inherits Rectangle {
                      }
                  }
             }
+            
+            // --- Legend & Controls ---
             HorizontalLayout {
-                 alignment: end;
-                 spacing: 8px;
-                 Rectangle {
-                    background: #222;
-                    border-radius: 6px;
+                alignment: end;
+                spacing: 20px;
+
+                // Legend
+                HorizontalLayout {
+                    spacing: 15px;
+                    
+                    // BTC Legend
                     HorizontalLayout {
-                        padding: 2px;
-                        spacing: 2px;
-                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "30d"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
-                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: #333; Text { text: "1y"; color: white; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }} 
-                        Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "All"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.btc-orange; y: 6px; }
+                        Text { text: "BTC"; color: Palette.text-secondary; font-size: 12px; }
+                    }
+                    
+                    // ETH Legend
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: Palette.eth-blue; y: 6px; }
+                        Text { text: "ETH"; color: Palette.text-secondary; font-size: 12px; }
                     }
                 }
-                Rectangle {
-                    height: 28px;
-                    background: transparent;
-                    Text { text: "See More"; color: Palette.text-secondary; font-size: 12px; font-weight: 600; vertical-alignment: center; }
+
+                HorizontalLayout {
+                     spacing: 8px;
+                     Rectangle {
+                        background: #222;
+                        border-radius: 6px;
+                        HorizontalLayout {
+                            padding: 2px;
+                            spacing: 2px;
+                            Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "30d"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                            Rectangle { width: 35px; height: 28px; border-radius: 4px; background: #333; Text { text: "1y"; color: white; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }} 
+                            Rectangle { width: 35px; height: 28px; border-radius: 4px; background: transparent; Text { text: "All"; color: Palette.text-secondary; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }}
+                        }
+                    }
                 }
             }
         }
 
-        // Chart Area: Frontend frame with Backend Image
+        // Chart Area
         HorizontalLayout {
              spacing: 10px;
              
              // Left: Chart Image + X-Axis Labels
              VerticalLayout {
-                 // Main Chart Image (Bars)
+                 // Main Chart Image
                  Rectangle {
                      vertical-stretch: 1;
                      clip: true;
@@ -459,11 +469,11 @@ component CryptoEtfFlowChart inherits Rectangle {
                         width: 100%;
                         height: 100%;
                         source: root.data.chart_image;
-                        image-fit: fill; // or contain, depending on preference
+                        image-fit: fill; 
                      }
                  }
                  
-                 // X-Axis Labels (Frontend text)
+                 // X-Axis Labels
                  HorizontalLayout {
                      height: 20px;
                      alignment: space-between;
@@ -617,7 +627,6 @@ export component CryptoMarketCapChart inherits Rectangle {
                 border-radius: 4px;
                 clip: true;
 
-                // --- IMAGE DISPLAY FROM BACKEND ---
                 Image {
                     width: 100%;
                     height: 100%;
@@ -629,7 +638,6 @@ export component CryptoMarketCapChart inherits Rectangle {
             // Y-Axis Labels
             VerticalLayout {
                 width: 5%;
-                // Using vertical alignment to space labels (Top to Bottom: 100% -> 0%)
                 VerticalLayout {
                     alignment: space-between;
                     padding-bottom: 2px; // Fine tune alignment
@@ -753,7 +761,7 @@ export component Crypto inherits Rectangle {
 
                 // --- 1. Tab Bar ---
                 HorizontalTabBar {
-                    tabs: ["Tab 1", "Tab 2", "Tab 3", "Tab 4"];
+                    tabs: ["Bitcoin Dominance", "RSI Heatmap", "ETFs Net Flow", "Market Cap"];
                     selected <=> root.selected_right_tab;
                 }
 

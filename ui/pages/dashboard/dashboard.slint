@@ -109,9 +109,12 @@ export component DashBoard inherits Rectangle {
     in property <[RsiData]> rsi_list;
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
+    in property <[CoinData]> ma_coin_list;
     in property <[CryptoData]> crypto_list;
     in property <float> rsi_overbought_pct: 0.0;
     in property <float> rsi_oversold_pct: 0.0; 
+    in property <float> ma_above_pct: 0.0;
+    in property <float> ma_below_pct: 0.0;
     in property <DominanceChartData> dominance_data;
     in property <[CoinData]> crypto_coin_list; 
     in property <EtfFlowData> etf_flow_data;
@@ -122,6 +125,7 @@ export component DashBoard inherits Rectangle {
     callback calculateCorrelation(string);
     callback getReturnMatrix(string, string, string);
     callback sort_rsi14();
+    callback sort_ma50();
     property <length> tab_item_width: 200px;
     
     background: #1a1a1a;
@@ -226,9 +230,12 @@ export component DashBoard inherits Rectangle {
                 rsi_list: root.rsi_list;
                 coin_list: root.coin_list;
                 ma_list: root.ma_list;
+                ma_coin_list: root.ma_coin_list;
                 crypto_list: root.crypto_list;
                 rsi_overbought_pct: root.rsi_overbought_pct;
                 rsi_oversold_pct: root.rsi_oversold_pct;
+                ma_above_pct: root.ma_above_pct;
+                ma_below_pct: root.ma_below_pct;
                 dominance_data: root.dominance_data;
                 crypto_coin_list: root.crypto_coin_list;
                 etf_flow_data: root.etf_flow_data;
@@ -248,6 +255,9 @@ export component DashBoard inherits Rectangle {
                 }
                 sort_rsi14 => {
                     root.sort_rsi14();
+                }
+                sort_ma50 => {
+                    root.sort_ma50();
                 }
                 width: 100%;
                 height: 100%;
@@ -283,19 +293,23 @@ export component AppWindow inherits Window {
     in-out property <[RsiData]> rsi_list;
     in-out property <[CoinData]> coin_list;
     in-out property <[MaData]> ma_list;
-    in property <[CryptoData]> crypto_list; 
+    in-out property <[CoinData]> ma_coin_list;
+    in-out property <[CryptoData]> crypto_list; 
     in-out property <float> rsi_overbought_pct: 0.0;
     in-out property <float> rsi_oversold_pct: 0.0; 
-    in property <DominanceChartData> dominance_data;
-    in property <[CoinData]> crypto_coin_list; 
-    in property <EtfFlowData> etf_flow_data;
-    in property <CryptoMarketCapData> market_cap_data;
+    in-out property <float> ma_above_pct: 0.0;
+    in-out property <float> ma_below_pct: 0.0;
+    in-out property <DominanceChartData> dominance_data;
+    in-out property <[CoinData]> crypto_coin_list; 
+    in-out property <EtfFlowData> etf_flow_data;
+    in-out property <CryptoMarketCapData> market_cap_data;
     in-out property <[SectorRangeSnapshot]> sector_ranges;
     callback on_add_tag(string);
     callback on_remove_tag(int);
     callback calculateCorrelation(string);
     callback getReturnMatrix(string, string, string);
     callback sort_rsi14();
+    callback sort_ma50();
     
     DashBoard {
         influence_data <=> root.stock_influence_data;
@@ -322,9 +336,12 @@ export component AppWindow inherits Window {
         rsi_list <=> root.rsi_list;
         coin_list <=> root.coin_list;
         ma_list <=> root.ma_list;
+        ma_coin_list <=> root.ma_coin_list;
         crypto_list <=> root.crypto_list; 
         rsi_overbought_pct <=> root.rsi_overbought_pct;
         rsi_oversold_pct <=> root.rsi_oversold_pct;
+        ma_above_pct <=> root.ma_above_pct;
+        ma_below_pct <=> root.ma_below_pct;
         dominance_data <=> root.dominance_data;
         crypto_coin_list <=> root.crypto_coin_list;
         etf_flow_data <=> root.etf_flow_data;
@@ -344,6 +361,9 @@ export component AppWindow inherits Window {
         }
         sort_rsi14 => {
             root.sort_rsi14();
+        }
+        sort_ma50 => {
+            root.sort_ma50();
         }
     }
 }

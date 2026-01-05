@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::collections::HashMap;
 // MP layout
-pub use mp::{spawn_rsi_task,register_rsi_sort_handler};
+pub use mp::{spawn_rsi_task,register_rsi_sort_handler, spawn_ma50_task, register_ma50_sort_handler};
 pub use crypto::{spawn_crypto_task, spawn_dominance_task, spawn_crypto_rsi_task, spawn_etf_flow_task, spawn_crypto_market_cap_task };
 
 pub mod backend;

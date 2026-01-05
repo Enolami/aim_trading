@@ -1042,6 +1042,18 @@ pub struct RsiData {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MaData {
+    pub symbol: String,
+    pub interval: String,
+    pub timestamp: i64,
+    pub middle: Option<f64>,
+    pub upper: Option<f64>,
+    pub lower: Option<f64>,
+    pub price: Option<f64>,
+    pub vhtt: Option<f64>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CryptoData {
     pub symbol: String,
     pub interval: String,

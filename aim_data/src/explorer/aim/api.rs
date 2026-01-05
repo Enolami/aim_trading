@@ -2,7 +2,7 @@ use crate::explorer::aim::{
     AbnormalTrade, ExchangeIndex, FinanceSheetData, FinancialData, IcbIndex, InsiderTransaction,
     InstitutionData, Officer, PropTradingData, SharedHolder, SjcPriceData, StockByGics, Subsidiary,
     TopStockInfluencer, fetch_api_data, fetch_api_finance_report_pdf, fetch_market_cap_api_data,
-    StockReport, StrategyReport, PdfReport, ApiReport, CorrelationMatrixAPI, ReturnMatrixAPI, RsiData, Top10MarketCap,
+    StockReport, StrategyReport, PdfReport, ApiReport, CorrelationMatrixAPI, ReturnMatrixAPI, RsiData, MaData, Top10MarketCap,
     CryptoData, DominanceData, CryptoRsiData, EtfFlowData, CryptoMarketCapData
 };
 
@@ -141,6 +141,12 @@ pub async fn fetch_rsi14_data() -> Result<Vec<RsiData>, reqwest::Error> {
     let endpoint = "indicator-statistic/RSI14";
     fetch_api_data(&endpoint).await
 }
+
+pub async fn fetch_ma50_data() -> Result<Vec<MaData>, reqwest::Error> {
+    let endpoint = "indicator-statistic/BB";
+    fetch_api_data(&endpoint).await
+}
+
 /// 🔹 Lấy Top 10 cổ phiếu vốn hóa lớn nhất từ API port 4040
 pub async fn fetch_top_10_market_cap_data() -> Result<Vec<Top10MarketCap>, reqwest::Error> {
     fetch_market_cap_api_data("top-10-market-cap").await

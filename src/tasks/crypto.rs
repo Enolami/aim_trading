@@ -183,28 +183,45 @@ fn generate_etf_chart_buffer(data: &[EtfFlowData], width: u32, height: u32) -> S
     let mut buffer = SharedPixelBuffer::<Rgb8Pixel>::new(width, height);
     let pixels = buffer.make_mut_slice();
 
-    // 1. Background (Match Palette.card-bg #1A1A1A -> 26, 26, 26)
+    // 1. Background (Match Palette.card-bg)
     let bg_color = Rgb8Pixel { r: 26, g: 26, b: 26 };
     for pixel in pixels.iter_mut() { *pixel = bg_color; }
 
     if data.is_empty() { return buffer; }
 
-    // 2. Find Range (Min/Max Value)
-    let mut max_val = 0.0;
-    let mut min_val = 0.0;
+    // 2. Define Colors
+    // Standard Colors
+    let btc_color = Rgb8Pixel { r: 247, g: 147, b: 26 }; // BTC Orange
+    let eth_color = Rgb8Pixel { r: 22, g: 82, b: 240 };  // ETH Blue
+    
+    // Darker Colors for "Over Threshold" area
+    let btc_dark = Rgb8Pixel { r: 168, g: 100, b: 18 }; 
+    let eth_dark = Rgb8Pixel { r: 11, g: 41, b: 120 };
+
+    // 3. Find Range (Min/Max based on Stacked Totals)
+    let mut max_abs_val = 0.0;
+    
     for d in data {
-        let v = d.value.unwrap_or(0.0);
-        if v > max_val { max_val = v; }
-        if v < min_val { min_val = v; }
+        let btc = d.btc_value.unwrap_or(0.0);
+        let eth = d.eth_value.unwrap_or(0.0);
+        
+        // Sum positives and negatives separately to find stack height
+        let pos_sum = (if btc > 0.0 { btc } else { 0.0 }) + (if eth > 0.0 { eth } else { 0.0 });
+        let neg_sum = (if btc < 0.0 { btc } else { 0.0 }) + (if eth < 0.0 { eth } else { 0.0 });
+        
+        if pos_sum.abs() > max_abs_val { max_abs_val = pos_sum.abs(); }
+        if neg_sum.abs() > max_abs_val { max_abs_val = neg_sum.abs(); }
     }
 
-    let abs_max = max_val.abs().max(min_val.abs());
-    let graph_limit = if abs_max == 0.0 { 100.0 } else { abs_max * 1.1 };
+    let graph_limit = if max_abs_val == 0.0 { 100.0 } else { max_abs_val * 1.1 };
     
-    // Zero line Y position (Middle of the height)
+    // Define Threshold (e.g., 50% of max graph value triggers dark mode for that specific crypto)
+    // We use 0.5 here so it triggers more often for individual components like ETH which might be smaller than the total stack.
+    let threshold_val = graph_limit * 0.5;
+
     let zero_y = height as f64 / 2.0;
 
-    // 3. Draw Axis Lines (Zero Line Only)
+    // 4. Draw Zero Line
     let axis_color = Rgb8Pixel { r: 60, g: 60, b: 60 };
     let zy_int = zero_y as i32;
     if zy_int >= 0 && zy_int < height as i32 {
@@ -213,33 +230,82 @@ fn generate_etf_chart_buffer(data: &[EtfFlowData], width: u32, height: u32) -> S
         }
     }
 
-    // 4. Draw Bars
-    // We use full width here, Slint will stretch/contain it.
-    let bar_width = (width as f64 / data.len() as f64) * 0.7; 
-    let gap = (width as f64 / data.len() as f64) * 0.3;
-    let green_color = Rgb8Pixel { r: 16, g: 185, b: 129 }; // #10B981
-    let red_color = Rgb8Pixel { r: 239, g: 68, b: 68 };   // #EF4444
+    // 5. Draw Stacked Bars
+    let bar_width = (width as f64 / data.len() as f64) * 0.6; 
+    let gap = (width as f64 / data.len() as f64) * 0.4;
 
     for (i, d) in data.iter().enumerate() {
-        let val = d.value.unwrap_or(0.0);
-        if val == 0.0 { continue; }
+        let btc = d.btc_value.unwrap_or(0.0);
+        let eth = d.eth_value.unwrap_or(0.0);
+        
+        if btc == 0.0 && eth == 0.0 { continue; }
+
+        // Determine if the *entire* block for this crypto should be dark
+        let is_btc_dark = btc.abs() > threshold_val;
+        let is_eth_dark = eth.abs() > threshold_val;
 
         let x_start = (i as f64 * (width as f64 / data.len() as f64)) + (gap / 2.0);
         let x_end = x_start + bar_width;
-        let bar_height_px = (val.abs() / graph_limit) * (height as f64 / 2.0);
-        
-        let (y_start, y_end) = if val > 0.0 {
-            (zero_y - bar_height_px, zero_y)
-        } else {
-            (zero_y, zero_y + bar_height_px)
-        };
 
-        let col = if val > 0.0 { green_color } else { red_color };
+        // Convert value to pixel height
+        let to_px = |v: f64| -> f64 { (v.abs() / graph_limit) * (height as f64 / 2.0) };
 
-        for bx in (x_start as i32)..(x_end as i32) {
-            for by in (y_start as i32)..(y_end as i32) {
-                if bx >= 0 && bx < width as i32 && by >= 0 && by < height as i32 {
-                    pixels[(by as u32 * width + bx as u32) as usize] = col;
+        // We draw per column (bx) to easily handle pixel-perfect stacking
+        let slot_width = width as f64 / data.len() as f64;
+        let bar_px = (slot_width * 0.6).round() as i32;
+        let gap_px = (slot_width * 0.4).round() as i32;
+
+        let bx_start = i as i32 * (bar_px + gap_px) + gap_px / 2;
+        let bx_end = bx_start + bar_px;
+
+        for bx in bx_start..bx_end {
+            if bx < 0 || bx >= width as i32 { continue; }
+
+            // --- Positive Flow Stack ---
+            let btc_h = if btc > 0.0 { to_px(btc) } else { 0.0 };
+            let eth_h = if eth > 0.0 { to_px(eth) } else { 0.0 };
+            
+            if btc_h > 0.0 || eth_h > 0.0 {
+                // Stack: BTC bottom, ETH top
+                let y_btc_end = zero_y - btc_h;
+                let y_eth_end = y_btc_end - eth_h;
+
+                for by in (y_eth_end as i32)..(zero_y as i32) {
+                    if by < 0 || by >= height as i32 { continue; }
+
+                    let color = if (by as f64) > y_btc_end {
+                        // In BTC region
+                        if is_btc_dark { btc_dark } else { btc_color }
+                    } else {
+                        // In ETH region
+                        if is_eth_dark { eth_dark } else { eth_color }
+                    };
+                    
+                    pixels[(by as u32 * width + bx as u32) as usize] = color;
+                }
+            }
+
+            // --- Negative Flow Stack ---
+            let btc_h_neg = if btc < 0.0 { to_px(btc) } else { 0.0 };
+            let eth_h_neg = if eth < 0.0 { to_px(eth) } else { 0.0 };
+
+            if btc_h_neg > 0.0 || eth_h_neg > 0.0 {
+                // Stack: BTC top (near 0), ETH bottom
+                let y_btc_end = zero_y + btc_h_neg;
+                let y_eth_end = y_btc_end + eth_h_neg;
+
+                for by in (zero_y as i32)..(y_eth_end as i32) {
+                    if by < 0 || by >= height as i32 { continue; }
+
+                    let color = if (by as f64) < y_btc_end {
+                        // In BTC region
+                        if is_btc_dark { btc_dark } else { btc_color }
+                    } else {
+                        // In ETH region
+                        if is_eth_dark { eth_dark } else { eth_color }
+                    };
+
+                    pixels[(by as u32 * width + bx as u32) as usize] = color;
                 }
             }
         }
@@ -698,8 +764,6 @@ pub async fn spawn_crypto_rsi_task(ui: &AppWindow) -> crate::tasks::task_manager
 }
 
 pub async fn spawn_etf_flow_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskHandle {
-
-
     let ui_handle = ui.as_weak();
     let (tx, mut rx) = tokio::sync::mpsc::channel(10);
     let task_handle = register_task("chart.quantitative.etf_flow".to_string(), tx, "Quantitative EtfFlow Data".to_string()).await;
@@ -713,38 +777,50 @@ pub async fn spawn_etf_flow_task(ui: &AppWindow) -> crate::tasks::task_manager::
             let fetched_result = fetch_etf_flow_data().await;
             let final_data = match fetched_result { 
                 Ok(data) => if data.is_empty() { generate_dummy_etf_data() } else { data }, 
-                Err(_) => generate_dummy_etf_data() };
+                Err(_) => generate_dummy_etf_data() 
+            };
 
-            let total_flow: f64 = final_data.iter().map(|d| d.value.unwrap_or(0.0)).sum();
+            // Calculate Totals properly for the header
+            let total_flow: f64 = final_data.iter().map(|d| {
+                 let b = d.btc_value.unwrap_or(0.0);
+                 let e = d.eth_value.unwrap_or(0.0);
+                 d.value.unwrap_or(b + e)
+            }).sum();
+
             let is_positive = total_flow >= 0.0;
             let sign = if is_positive { "+" } else { "-" };
             let abs_flow = total_flow.abs();
-            let formatted_flow = if abs_flow >= 1_000_000_000.0 { format!("{}${:.2}B", sign, abs_flow / 1_000_000_000.0) } else if abs_flow >= 1_000_000.0 { format!("{}${:.2}M", sign, abs_flow / 1_000_000.0) } else { format!("{}${:.2}", sign, abs_flow) };
+            let formatted_flow = if abs_flow >= 1_000_000_000.0 { 
+                format!("{}${:.2}B", sign, abs_flow / 1_000_000_000.0) 
+            } else if abs_flow >= 1_000_000.0 { 
+                format!("{}${:.2}M", sign, abs_flow / 1_000_000.0) 
+            } else { 
+                format!("{}${:.2}", sign, abs_flow) 
+            };
 
-            // Calculate Scale for Y-Axis Labels
-            let mut max_val = 0.0;
-            let mut min_val = 0.0;
+            // Calculate Scale for Y-Axis Labels based on STACKED components
+            let mut max_abs_val = 0.0;
             for d in &final_data {
-                let v = d.value.unwrap_or(0.0);
-                if v > max_val { max_val = v; }
-                if v < min_val { min_val = v; }
+                let btc = d.btc_value.unwrap_or(0.0);
+                let eth = d.eth_value.unwrap_or(0.0);
+                let pos = (if btc > 0.0 { btc } else { 0.0 }) + (if eth > 0.0 { eth } else { 0.0 });
+                let neg = (if btc < 0.0 { btc } else { 0.0 }) + (if eth < 0.0 { eth } else { 0.0 });
+                let m = pos.abs().max(neg.abs());
+                if m > max_abs_val { max_abs_val = m; }
             }
-            let abs_max = max_val.abs().max(min_val.abs());
-            let graph_limit = if abs_max == 0.0 { 100.0 } else { abs_max * 1.1 };
+            
+            let graph_limit = if max_abs_val == 0.0 { 100.0 } else { max_abs_val * 1.1 };
             
             let y_max_str = format!("{:.1}M", graph_limit / 1_000_000.0);
             let y_min_str = format!("-{:.1}M", graph_limit / 1_000_000.0);
 
-            // Generate X-Axis Labels (Simple sampling)
-            // Month names for mapping
+            // Generate X-Axis Labels
             let month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             let mut x_labels_vec: Vec<SharedString> = Vec::new();
             
-            // Pick 5 evenly spaced points
             let step = if final_data.len() > 1 { (final_data.len() - 1) / 4 } else { 1 };
             for i in (0..final_data.len()).step_by(step.max(1)) {
                 let ts = final_data[i].timestamp;
-                // Simple approx month index
                 let month_idx = ((ts / 2629743) % 12) as usize; 
                 let m_name = month_names[month_idx];
                 x_labels_vec.push(m_name.to_string().into());
@@ -758,7 +834,7 @@ pub async fn spawn_etf_flow_task(ui: &AppWindow) -> crate::tasks::task_manager::
                 let chart_img = Image::from_rgb8(chart_buffer);
                 let etf_data = SlintEtfFlowData {
                     header_value: formatted_flow.into(),
-                    header_subtext: "Past 30 Days Net Flow".into(),
+                    header_subtext: "Total Net Flow".into(),
                     is_positive: is_positive,
                     chart_image: chart_img,
                     y_max: y_max_str.into(),
@@ -772,7 +848,6 @@ pub async fn spawn_etf_flow_task(ui: &AppWindow) -> crate::tasks::task_manager::
     });
     task_handle
 }
-
 pub async fn spawn_crypto_market_cap_task(ui: &AppWindow) -> crate::tasks::task_manager::TaskHandle {
     let ui_handle = ui.as_weak();
     let (tx, mut rx) = tokio::sync::mpsc::channel(10);
@@ -788,7 +863,7 @@ pub async fn spawn_crypto_market_cap_task(ui: &AppWindow) -> crate::tasks::task_
             let fetched_result = fetch_crypto_market_cap_data().await;
             
             let mut final_data = match fetched_result {
-                Ok(data) => if data.is_empty() { generate_dummy_market_cap_data() } else {data },
+                Ok(data) => if data.is_empty() { generate_dummy_market_cap_data() } else { data },
                 Err(_) => generate_dummy_market_cap_data()
             };
 
